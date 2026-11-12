@@ -258,7 +258,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ### Fase 12: Video Dubbing & Escala Global Multi-Idioma
 - [X] **12.1** **Pipeline de Video Dubbing (`concat-factory::dubbing`)**:
   - [X] `DubbingJobConfig` & `TargetLanguage` (PT-BR, EN-US, ES, FR, DE, IT com vozes neurais padrão).
-  - [ ] Integração runtime com separação vocal (`concat-speech::isolate`) e transcrição (`whisper-rs`).
+  - [X] Integração runtime com separação vocal (`DubbingPipelinePlan::separate_stems` via `concat_speech::vocals` / `isolate`) e transcrição (`DubbingPipelinePlan::transcribe_vocals` via `concat_speech::transcribe::Transcriber`).
 - [X] **12.2** **Tradução & Ressíntese Sincronizada (Time-Stretch)**:
   - [X] `compute_time_stretch_rate()` ajustando velocidade TTS (`-40%..+60%`) para caber na janela original (com testes unitários).
   - [X] Exportação em lote de múltiplos idiomas (`build_multilang_batch_jobs` em `concat-factory::dubbing` escalando `1 Vídeo -> N Idiomas`).
@@ -314,7 +314,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [ ] Execução de inferência ONNX real para MusicGen / ACE-Step no `concat-host::models`.
 - [X] **16.3** **Extração de Stems & Sincronia de Batida (Beat Sync)**:
   - [X] `MusicNodeConfig::beat_timestamps()` calculando timecodes exatos de batida por BPM (com testes unitários).
-  - [ ] Separação automática de vocal e instrumental via `concat-speech::vocals` / `isolate` em runtime.
+  - [X] Separação automática de vocal e instrumental via `concat-speech::vocals` / `isolate` conectada em `DubbingPipelinePlan::separate_stems`.
 
 ---
 

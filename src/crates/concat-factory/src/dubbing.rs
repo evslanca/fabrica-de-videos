@@ -154,6 +154,82 @@ pub fn prepare_dubbing_plan(
     }
 }
 
+impl DubbingPipelinePlan {
+    /// Separates the source media into vocal and instrumental stems using
+    /// Spleeter (`concat_speech::vocals::separate`) when `spleeter_networks` is
+    /// provided, or the embedded DeepFilterNet3 isolator (`concat_speech::isolate::isolate`)
+    /// otherwise.
+    pub fn separate_stems(
+        &self,
+        spleeter_networks: Option<&concat_speech::vocals::Networks>,
+        cancel: &std::sync::atomic::AtomicBool,
+        progress: concat_speech::isolate::Progress<'_>,
+    ) -> Result<(), String> {
+        if let Some(parent) = self.vocals_stem_path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let stems = concat_speech::isolate::Stems {
+            voice: self.vocals_stem_path.clone(),
+            rest: self.instrumental_stem_path.clone(),
+        };
+        if let Some(networks) = spleeter_networks {
+            let workers = concat_speech::vocals::workers_for(None);
+            concat_speech::vocals::separate(
+                &self.source_media,
+                None,
+                networks,
+                &stems,
+                workers,
+                cancel,
+                progress,
+            )
+        } else {
+            let workers = concat_speech::isolate::workers_for(None);
+            concat_speech::isolate::isolate(
+                &self.source_media,
+                None,
+                &stems,
+                workers,
+                cancel,
+                progress,
+            )
+        }
+    }
+
+    /// Transcribes the separated vocal stem via `concat_speech::transcribe::Transcriber`
+    /// and maps Whisper segments into [`DubbingSegment`] timecode windows.
+    pub fn transcribe_vocals(
+        &self,
+        dirs: &concat_host::AppDirs,
+        model_id: &str,
+        source_language: Option<String>,
+        duration_seconds: f64,
+    ) -> Result<Vec<DubbingSegment>, String> {
+        let transcriber = concat_speech::transcribe::Transcriber::new();
+        let req = concat_speech::transcribe::TranscribeRequest {
+            path: self.vocals_stem_path.to_string_lossy().into_owned(),
+            audio_stream: None,
+            source_start: 0.0,
+            window: duration_seconds.max(1.0),
+            model_id: model_id.to_string(),
+            language: source_language,
+        };
+        let segments = transcriber.transcribe(dirs, &req, |_| {})?;
+        Ok(segments
+            .into_iter()
+            .enumerate()
+            .map(|(index, seg)| DubbingSegment {
+                index,
+                start_ms: (seg.start.max(0.0) * 1000.0).round() as u64,
+                end_ms: (seg.end.max(0.0) * 1000.0).round() as u64,
+                original_text: seg.text.trim().to_string(),
+                translated_text: String::new(),
+                required_rate_percent: 0,
+            })
+            .collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,5 +261,17 @@ mod tests {
         assert_eq!(jobs[0].1.voice.voice_id, "en-US-ChristopherNeural");
         assert!(jobs[0].1.export.project_name.ends_with("_en-us"));
         assert_eq!(jobs[2].1.voice.voice_id, "fr-FR-HenriNeural");
+    }
+
+    #[test]
+    fn prepares_dubbing_plan_with_stem_paths() {
+        let plan = prepare_dubbing_plan(
+            std::path::Path::new("input.mp4"),
+            TargetLanguage::Spanish,
+            std::path::Path::new("work"),
+        );
+        assert!(plan.vocals_stem_path.ends_with("vocals.wav"));
+        assert!(plan.instrumental_stem_path.ends_with("instrumental.wav"));
+        assert!(plan.dubbed_voice_path.ends_with("dubbed_voice.wav"));
     }
 }
