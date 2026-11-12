@@ -26,6 +26,7 @@
 
 pub mod catalogue;
 pub mod cube;
+pub mod dark_cinema;
 pub mod expr;
 pub mod filters;
 pub mod looks;

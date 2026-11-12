@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { Theme } from "../../theme/theme.slint";
+import { StatusLed, LedState } from "../../primitives/status-led.slint";
+import { FactoryNodeCard } from "./node-card.slint";
+import { Modal, Button, Progress } from "../../primitives/primitives.slint";
+
+// The batch production queue sidebar panel.
+// Displays a scrollable list of queued videos with status LEDs, progress bars
+// and an action button to start/stop the batch run.
+
+export struct BatchQueueItem {
+    id: string,
+    topic: string,
+    phase: string,
+    progress: float,
+    status: LedState,
+}
+
+export component BatchQueuePanel {
+    in property <[BatchQueueItem]> items;
+    in property <bool> running: false;
+    in property <int>  completed-count: 0;
+    in property <int>  total-count: 0;
+
+    callback start-batch();
+    callback stop-batch();
+    callback clear-queue();
+
+    width: 260px;
+
+    Rectangle {
+        background: #111116;
+        border-radius: 10px;
+        border-width: 1px;
+        border-color: #2a2a35;
+
+        VerticalLayout {
+            padding: 12px;
+            spacing: 8px;
+
+            // Header
+            HorizontalLayout {
+                alignment: space-between;
+
+                Text {
+                    text: "📦 Fila de Produção";
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: #e8e8f0;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: root.completed-count + "/" + root.total-count;
+                    font-size: 11px;
+                    color: #6b7280;
+                    vertical-alignment: center;
+                }
+            }
+
+            // Control buttons
+            HorizontalLayout {
+                spacing: 6px;
+
+                // Start / Stop button
+                Rectangle {
+                    height: 30px;
+                    border-radius: 6px;
+                    background: root.running ? #7f1d1d : #14532d;
+                    border-width: 1px;
+                    border-color: root.running ? #ef4444 : #22c55e;
+                    horizontal-stretch: 1;
+
+                    Text {
+                        text: root.running ? "⏹ Parar" : "▶ Iniciar Lote";
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: root.running ? #fca5a5 : #86efac;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    TouchArea {
+                        clicked => {
+                            if (root.running) { root.stop-batch(); }
+                            else { root.start-batch(); }
+                        }
+                    }
+                }
+
+                // Clear completed
+                Rectangle {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 6px;
+                    background: #1a1a1f;
+                    border-width: 1px;
+                    border-color: #333340;
+
+                    Text {
+                        text: "🗑";
+                        font-size: 12px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    TouchArea {
+                        clicked => { root.clear-queue(); }
+                    }
+                }
+            }
+
+            // Queue list
+            for item in root.items : Rectangle {
+                height: 62px;
+                border-radius: 7px;
+                background: #17171e;
+                border-width: 1px;
+                border-color: #2a2a35;
+
+                VerticalLayout {
+                    padding: 8px;
+                    spacing: 4px;
+
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+
+                        StatusLed { state: item.status; size: 8px; }
+
+                        Text {
+                            text: item.topic;
+                            font-size: 11px;
+                            font-weight: 600;
+                            color: #e8e8f0;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                        }
+                    }
+
+                    Text {
+                        text: item.phase;
+                        font-size: 10px;
+                        color: #6b7280;
+                    }
+
+                    Rectangle {
+                        height: 3px;
+                        border-radius: 2px;
+                        background: #2a2a35;
+
+                        Rectangle {
+                            width: parent.width * item.progress;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: item.status == LedState.Error ? #ef4444 :
+                                        item.status == LedState.Success ? #22c55e : #3b82f6;
+                            animate width { duration: 300ms; easing: ease-out; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,118 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { Theme } from "../theme/theme.slint";
+import { StatusLed, LedState } from "./status-led.slint";
+
+// Factory node card: a draggable, self-contained stage of the pipeline.
+// Rendered on the Factory canvas and wired to other cards via bezier connectors.
+
+export component FactoryNodeCard {
+    in property <string>   title;
+    in property <string>   subtitle;
+    in property <LedState> status: LedState.Off;
+    in property <float>    progress: 0.0;    // 0.0 to 1.0
+    in property <bool>     selected: false;
+
+    // Position on the infinite canvas (set by the parent layout engine)
+    in-out property <length> canvas-x;
+    in-out property <length> canvas-y;
+
+    callback run-pressed();
+    callback card-clicked();
+
+    width: 220px;
+    min-height: 90px;
+
+    // Outer selection ring
+    Rectangle {
+        border-radius: 10px;
+        border-width: root.selected ? 2px : 0px;
+        border-color: #3b82f6;
+        background: transparent;
+
+        // Card body
+        Rectangle {
+            border-radius: 10px;
+            background: #1a1a1f;
+            border-width: 1px;
+            border-color: root.selected ? #3b82f6 : #333340;
+
+            VerticalLayout {
+                padding: 10px;
+                spacing: 6px;
+
+                // Header: LED + title + run button
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: space-between;
+
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: start;
+                        StatusLed {
+                            state: root.status;
+                            size: 9px;
+                        }
+                        Text {
+                            text: root.title;
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #e8e8f0;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    // Mini run button
+                    Rectangle {
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 10px;
+                        background: #2a2a35;
+                        border-width: 1px;
+                        border-color: #444455;
+
+                        Text {
+                            text: "▶";
+                            font-size: 9px;
+                            color: #6b7280;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        TouchArea {
+                            clicked => { root.run-pressed(); }
+                        }
+                    }
+                }
+
+                // Subtitle / description
+                Text {
+                    text: root.subtitle;
+                    font-size: 10px;
+                    color: #6b7280;
+                    wrap: word-wrap;
+                }
+
+                // Progress bar
+                if root.progress > 0.0 : Rectangle {
+                    height: 3px;
+                    border-radius: 2px;
+                    background: #2a2a35;
+
+                    Rectangle {
+                        width: parent.width * root.progress;
+                        height: 3px;
+                        border-radius: 2px;
+                        background: root.status == LedState.Error ? #ef4444 : #3b82f6;
+                        animate width { duration: 200ms; easing: ease-out; }
+                    }
+                }
+            }
+
+            TouchArea {
+                clicked => { root.card-clicked(); }
+            }
+        }
+    }
+}

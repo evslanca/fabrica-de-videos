@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { Theme } from "../../theme/theme.slint";
+import { StatusLed, LedState } from "../../primitives/status-led.slint";
+import { FactoryNodeCard } from "./node-card.slint";
+import { BatchQueuePanel, BatchQueueItem } from "./batch-queue.slint";
+
+// The node inspector: contextual config sidebar shown when a node is selected.
+// Adapts its content based on the selected-node-kind string.
+
+export component NodeInspector {
+    in property <string> node-kind;         // "script" | "voice" | "media" | "sfx" | "caption" | "export"
+    in property <string> node-title;
+    in property <LedState> node-status;
+
+    callback apply();
+    callback test-node();
+
+    width: 260px;
+
+    Rectangle {
+        background: #111116;
+        border-radius: 10px;
+        border-width: 1px;
+        border-color: #2a2a35;
+
+        VerticalLayout {
+            padding: 12px;
+            spacing: 10px;
+
+            // Header
+            HorizontalLayout {
+                alignment: space-between;
+
+                HorizontalLayout {
+                    spacing: 6px;
+                    StatusLed { state: root.node-status; size: 9px; }
+                    Text {
+                        text: root.node-title;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: #e8e8f0;
+                        vertical-alignment: center;
+                    }
+                }
+
+                Text {
+                    text: root.node-kind;
+                    font-size: 10px;
+                    color: #6b7280;
+                    vertical-alignment: center;
+                }
+            }
+
+            // Separator
+            Rectangle { height: 1px; background: #2a2a35; }
+
+            // Placeholder content area (actual node-specific widgets bound in Rust)
+            Rectangle {
+                height: 160px;
+                border-radius: 7px;
+                background: #17171e;
+                border-width: 1px;
+                border-color: #2a2a35;
+
+                Text {
+                    text: "Parâmetros de " + root.node-title;
+                    font-size: 11px;
+                    color: #4b5563;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            // Actions
+            HorizontalLayout {
+                spacing: 6px;
+
+                // Test / preview button
+                Rectangle {
+                    height: 30px;
+                    border-radius: 6px;
+                    background: #1a1a1f;
+                    border-width: 1px;
+                    border-color: #333340;
+                    horizontal-stretch: 1;
+
+                    Text {
+                        text: "▶ Testar Nó";
+                        font-size: 11px;
+                        color: #9ca3af;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    TouchArea { clicked => { root.test-node(); } }
+                }
+
+                // Apply button
+                Rectangle {
+                    height: 30px;
+                    border-radius: 6px;
+                    background: #1d4ed8;
+                    border-width: 1px;
+                    border-color: #3b82f6;
+                    horizontal-stretch: 1;
+
+                    Text {
+                        text: "Aplicar";
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #bfdbfe;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    TouchArea { clicked => { root.apply(); } }
+                }
+            }
+        }
+    }
+}

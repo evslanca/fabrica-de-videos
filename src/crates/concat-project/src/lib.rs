@@ -21,8 +21,11 @@
 //! document model needs serde, and concat-core's zero-dependency rule is worth
 //! more than the adjacency.
 
+pub mod auto_ducking;
 pub mod capcut;
 pub mod commands;
+pub mod factory_assembler;
+pub mod sfx_library;
 #[cfg(test)]
 mod consolidate_tests;
 pub mod doc;

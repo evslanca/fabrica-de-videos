@@ -1,0 +1,195 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { Theme } from "../theme/theme.slint";
+import { StatusLed, LedState } from "../primitives/status-led.slint";
+import { FactoryNodeCard } from "./factory/node-card.slint";
+import { BatchQueuePanel, BatchQueueItem } from "./factory/batch-queue.slint";
+import { NodeInspector } from "./factory/node-inspector.slint";
+
+// Factory Pane: the visual workflow canvas.
+// Renders a dark dotted-grid infinite canvas with draggable node cards
+// connected by animated bezier wires.
+
+export struct FactoryNodeRow {
+    id: string,
+    title: string,
+    subtitle: string,
+    status: LedState,
+    progress: float,
+    pos-x: length,
+    pos-y: length,
+}
+
+export global FactoryData {
+    // Pipeline nodes to render on the canvas
+    in-out property <[FactoryNodeRow]> nodes: [
+        { id: "script",  title: "Roteiro",       subtitle: "Divisão em cenas e hook",          status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 80px  },
+        { id: "voice",   title: "Voz / TTS",      subtitle: "Edge-TTS · pt-BR-AntonioNeural",  status: LedState.Off, progress: 0.0, pos-x: 290px, pos-y: 40px  },
+        { id: "media",   title: "B-Roll",          subtitle: "Pexels · Pixabay · Ken Burns",   status: LedState.Off, progress: 0.0, pos-x: 290px, pos-y: 160px },
+        { id: "sfx",     title: "SFX & Áudio",    subtitle: "Whoosh · Riser · Auto-Ducking",   status: LedState.Off, progress: 0.0, pos-x: 550px, pos-y: 80px  },
+        { id: "caption", title: "Legendas",        subtitle: "Hormozi · Safe Zone · Palavras",  status: LedState.Off, progress: 0.0, pos-x: 550px, pos-y: 200px },
+        { id: "export",  title: "Exportar",        subtitle: "16:9 YouTube · 9:16 Shorts",     status: LedState.Off, progress: 0.0, pos-x: 810px, pos-y: 120px },
+    ];
+
+    in-out property <[BatchQueueItem]> batch-items;
+    in-out property <bool>  batch-running: false;
+    in-out property <int>   batch-completed: 0;
+    in-out property <int>   batch-total: 0;
+    in-out property <string> selected-node-id: "";
+    in-out property <string> selected-node-kind: "";
+    in-out property <string> selected-node-title: "";
+    in-out property <LedState> selected-node-status: LedState.Off;
+
+    callback fabricate();
+    callback node-selected(string, string);  // id, kind
+    callback start-batch();
+    callback stop-batch();
+    callback test-node(string);
+}
+
+export component FactoryPane {
+    HorizontalLayout {
+        spacing: 0px;
+
+        // ── Main canvas area ───────────────────────────────────────────────
+        Rectangle {
+            horizontal-stretch: 1;
+            background: #0d0d12;
+            clip: true;
+
+            // Dot-grid background texture (CSS-style SVG pattern emulation)
+            Rectangle {
+                width: 100%;
+                height: 100%;
+                background: @radial-gradient(circle, #252530 1px, transparent 1px);
+                // Note: pattern repeat handled by GPU tiling in the Concat wgpu compositor
+            }
+
+            // NODE CARDS (positioned on canvas)
+            for node in FactoryData.nodes : FactoryNodeCard {
+                x: node.pos-x;
+                y: node.pos-y;
+                title: node.title;
+                subtitle: node.subtitle;
+                status: node.status;
+                progress: node.progress;
+                selected: FactoryData.selected-node-id == node.id;
+
+                run-pressed  => { FactoryData.test-node(node.id); }
+                card-clicked => { FactoryData.node-selected(node.id, node.id); }
+            }
+
+            // ── Bottom action bar ─────────────────────────────────────────
+            Rectangle {
+                y: parent.height - self.height;
+                height: 52px;
+                width: 100%;
+                background: #111116.with-alpha(0.95);
+                border-width: 1px;
+                border-color: #2a2a35;
+
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    spacing: 12px;
+                    alignment: space-between;
+
+                    // Format toggle: 16:9 / 9:16
+                    HorizontalLayout {
+                        spacing: 6px;
+                        alignment: center;
+
+                        Text {
+                            text: "Formato:";
+                            font-size: 11px;
+                            color: #6b7280;
+                            vertical-alignment: center;
+                        }
+
+                        Rectangle {
+                            width: 60px; height: 28px;
+                            border-radius: 6px;
+                            background: #1d4ed8;
+                            border-width: 1px;
+                            border-color: #3b82f6;
+
+                            Text {
+                                text: "16:9";
+                                font-size: 11px;
+                                font-weight: 700;
+                                color: #bfdbfe;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        Rectangle {
+                            width: 60px; height: 28px;
+                            border-radius: 6px;
+                            background: #1a1a1f;
+                            border-width: 1px;
+                            border-color: #333340;
+
+                            Text {
+                                text: "9:16";
+                                font-size: 11px;
+                                color: #9ca3af;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+
+                    // FABRICATE master button
+                    Rectangle {
+                        width: 180px; height: 36px;
+                        border-radius: 8px;
+                        background: @linear-gradient(135deg, #7c3aed, #2563eb);
+                        border-width: 1px;
+                        border-color: #818cf8;
+
+                        Text {
+                            text: "⚡ FABRICAR VÍDEO";
+                            font-size: 13px;
+                            font-weight: 900;
+                            color: #ffffff;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        TouchArea {
+                            clicked => { FactoryData.fabricate(); }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Right sidebar: Inspector + Batch Queue ─────────────────────────
+        VerticalLayout {
+            width: 272px;
+            spacing: 8px;
+            padding: 8px;
+            background: #0d0d12;
+
+            NodeInspector {
+                node-kind: FactoryData.selected-node-kind;
+                node-title: FactoryData.selected-node-title != "" ? FactoryData.selected-node-title : "Nenhum Nó Selecionado";
+                node-status: FactoryData.selected-node-status;
+                apply => {}
+                test-node => { FactoryData.test-node(FactoryData.selected-node-id); }
+            }
+
+            BatchQueuePanel {
+                items: FactoryData.batch-items;
+                running: FactoryData.batch-running;
+                completed-count: FactoryData.batch-completed;
+                total-count: FactoryData.batch-total;
+                start-batch => { FactoryData.start-batch(); }
+                stop-batch  => { FactoryData.stop-batch(); }
+                clear-queue => { FactoryData.batch-items = []; }
+            }
+        }
+    }
+}

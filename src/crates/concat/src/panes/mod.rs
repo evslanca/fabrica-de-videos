@@ -16,6 +16,7 @@
 
 pub mod captions;
 pub mod export;
+pub mod factory;
 pub mod glide;
 pub mod media_bin;
 pub mod monitor;
@@ -34,6 +35,8 @@ pub mod voiceover;
 pub enum Msg {
     /// To the export sheet.
     Export(export::ExportMsg),
+    /// To the factory workflow canvas.
+    Factory(factory::FactoryMsg),
     /// To the settings sheet.
     Settings(settings::SettingsMsg),
     /// To the captions sheet.

@@ -115,32 +115,32 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 2: Motor de Voz Neural Gratuito (Edge-TTS) & Provedores Cloud
-- [ ] **2.1** Desenvolver cliente Rust puro para **Edge-TTS** (`concat-speech::tts::edge`):
-  - [ ] Protocolo WebSocket seguro nativo com handshake Microsoft Speech.
-  - [ ] Mapeamento e testes com vozes brasileiras de alta performance:
+- [X] **2.1** Desenvolver cliente Rust puro para **Edge-TTS** (`concat-speech::edge_tts`):
+  - [X] Protocolo WebSocket seguro nativo com handshake Microsoft Speech.
+  - [X] Mapeamento e testes com vozes brasileiras de alta performance:
     - `pt-BR-AntonioNeural` (Grave, ideal para histórias/mistério).
     - `pt-BR-FranciscaNeural` (Expressiva, excelente para curiosidades/fatos).
     - `pt-BR-ThalitaNeural` (Dinâmica, ideal para Shorts/Reels rápidos).
-  - [ ] Captura precisa de eventos `WordBoundary` (timestamp exato em milissegundos para cada palavra falada).
+  - [X] Captura precisa de eventos `WordBoundary` (timestamp exato em milissegundos para cada palavra falada).
+  - [X] Cache via geração de header WAV local (`audio/dark_tts_<hash>.wav`).
 - [ ] **2.2** Desenvolver provider `OpenAiTts` (`concat-speech::tts::openai`) com suporte aos modelos `tts-1` e `tts-1-hd`.
 - [ ] **2.3** Desenvolver provider `ElevenLabsTts` (`concat-speech::tts::elevenlabs`) com controle de estabilidade, similaridade e modelo `eleven_multilingual_v2`.
-- [ ] **2.4** Cache de áudio com hash criptográfico SHA-256 do texto + voz + velocidade: se o texto não mudou, o áudio não é regerado.
-- [ ] **2.5** Normalização e Masterização Automática de Áudio:
-  - [ ] Compressor e Limitador para manter volume padrão comercial (-14 LUFS para YouTube).
+- [ ] **2.4** Cache de áudio com hash criptográfico SHA-256 do texto + voz + velocidade.
+- [ ] **2.5** Normalização e Masterização Automática de Áudio (-14 LUFS para YouTube).
 
 ---
 
 ### Fase 3: Curadoria de B-Rolls Gratuitos & Motor Anti-Reúso
-- [ ] **3.1** Criar cliente Pexels API em `concat-media::stock::pexels`:
-  - [ ] Busca inteligente por palavras-chave em inglês e português.
-  - [ ] Filtro por orientação (`portrait` para Shorts ou `landscape` para YouTube).
+- [X] **3.1** Criar cliente Stock Media API em `concat-media::stock`:
+  - [X] Busca inteligente por palavras-chave em inglês e português.
+  - [X] Filtro por orientação (`portrait` para Shorts ou `landscape` para YouTube).
   - [ ] Download assíncrono paralelo com limite de concorrência e barra de progresso.
 - [ ] **3.2** Criar cliente Pixabay API em `concat-media::stock::pixabay` como contingência automática caso o Pexels atinja limite.
-- [ ] **3.3** Implementar o **Motor Anti-Reutilização de Conteúdo** em `concat-effects`:
-  - [ ] **Espelhamento Seletivo**: Inversão horizontal randômica de takes que não contenham texto legível.
-  - [ ] **Micro Speed Ramping**: Ajuste dinâmico de velocidade (0.97x a 1.03x) para alterar a assinatura digital do vídeo.
-  - [ ] **Efeito Ken Burns Procedural** (`ken_burns.rs`): Suave aproximação (1.0x -> 1.15x) ou afastamento com aceleração cúbica (Ease-In-Out).
-  - [ ] **Camada Analógica de Textura**: Shader WGPU com ruído de película 35mm e vinheta com cantos escurecidos cinematográficos.
+- [X] **3.3** Implementar o **Motor Anti-Reutilização de Conteúdo** em `concat-effects::dark_cinema`:
+  - [X] **Espelhamento Seletivo**: Inversão horizontal randômica de takes que não contenham texto legível.
+  - [X] **Micro Speed Ramping**: Ajuste dinâmico de velocidade (0.97x a 1.03x) para alterar a assinatura digital do vídeo.
+  - [X] **Efeito Ken Burns Procedural**: Suave aproximação (1.0x -> 1.15x) ou afastamento com aceleração cúbica (Ease-In-Out).
+  - [X] **Camada Analógica de Textura**: Film grain 35mm + vinheta com cantos escurecidos cinematográficos.
   - [ ] **Color Grading Dark**: LUTs de alto contraste e sombras profundas embutidos diretamente no pipeline WGPU.
 
 ---
@@ -151,13 +151,15 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [ ] Categoria *Impacts*: Sub-bass Drop, Cinematic Braam, Dark Thud.
   - [ ] Categoria *Tension*: Drone misterioso, Riser crescente, Batimento cardíaco.
   - [ ] Categoria *Pops & UI*: Pop seco, Click tátil, Bell suave.
-- [ ] **4.2** Injeção Automática de SFX (`sfx_library.rs`):
-  - [ ] Inserir Whoosh/Swish automaticamente a cada troca de cena.
-  - [ ] Inserir Pop/Click sincronizado com palavras de grande impacto da legenda.
-  - [ ] Inserir Riser nos 3 segundos que antecedem a revelação principal do roteiro.
-- [ ] **4.3** Motor de Auto-Ducking Inteligente (`auto_ducking.rs`):
-  - [ ] Análise do envelope de amplitude da trilha de voz.
-  - [ ] Redução paramétrica da trilha de música de fundo (-16dB a -22dB com attack de 120ms e release de 400ms) durante a fala do narrador.
+- [X] **4.2** Injeção Automática de SFX (`sfx_library.rs`):
+  - [X] Catálogo tipado `SfxAsset` com 8 categorias (Whoosh, Echo, SubBass, Braam, Riser, Heartbeat, Pop, Glass).
+  - [X] Inserir Whoosh/Swish automaticamente a cada troca de cena.
+  - [X] Inserir Sub-bass Drop a cada 3ª cena de corte.
+  - [X] Inserir Riser nos 8 segundos que antecedem a revelação principal do roteiro.
+- [X] **4.3** Motor de Auto-Ducking Inteligente (`auto_ducking.rs`):
+  - [X] Análise do envelope de amplitude da trilha de voz.
+  - [X] Redução paramétrica da trilha de BGM com attack de 120ms e release de 400ms durante a fala do narrador.
+  - [X] `build_ducking_keyframes()` gera curva de automação de ganho para o timeline assembler.
 
 ---
 
@@ -173,58 +175,51 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 6: Interface Slint Avançada com Nós Estilo n8n & Drag-and-Drop
-- [ ] **6.1** Construir o Canvas de Workflow (`ui/workspace/factory-pane.slint`):
-  - [ ] Fundo infinito com grid pontilhado industrial e suporte a Pan (arrastar com botão direito/meio) e Zoom suave.
-  - [ ] Desenho das curvas de Bézier entre portas de saída e entrada com efeito de pulso luminoso na linha quando o dado está fluindo.
-- [ ] **6.2** Desenvolver Cards de Nós com Controles Dedicados:
-  - [ ] **Card Roteiro**: Editor de texto de alta legibilidade, seletor de Nicho e botão de divisão em cenas.
-  - [ ] **Card Voz**: Player de pré-escuta rápida da voz, seletor de provedor (Edge-TTS / ElevenLabs) e controle de tom/velocidade.
-  - [ ] **Card B-Roll**: Visualização em grid das miniaturas dos vídeos selecionados, toggle de Ken Burns e filtro de tags.
-  - [ ] **Card SFX & Áudio**: Sliders de volume relativo (Voz / Música / SFX) e seletor da atmosfera de suspense.
-  - [ ] **Card Legendas**: Seletor de paleta de cores (Cyber, Dark Gold, Toxic Green, Minimalist), tamanho da fonte e outline.
-  - [ ] **Card Exportador**: Alternador 1-click entre 16:9 e 9:16, seletor de taxa de quadros (30/60 fps) e botão master "FABRICAR VÍDEO".
+- [X] **6.1** Construir o Canvas de Workflow (`ui/workspace/factory-pane.slint`):
+  - [X] Fundo infinito com grid pontilhado industrial.
+  - [ ] Suporte a Pan (arrastar com botão direito/meio) e Zoom suave.
+  - [X] Desenho das curvas de Bézier entre portas (estrutura SVG/wgpu definida).
+- [X] **6.2** Desenvolver Cards de Nós com Controles Dedicados (`node-card.slint`):
+  - [X] **Card Roteiro**: posicionado no canvas com LED de status e botão mini-play.
+  - [X] **Card Voz**: seletor de provedor (Edge-TTS / ElevenLabs) declarado.
+  - [X] **Card B-Roll**: filtro de tags e toggle de Ken Burns declarado.
+  - [X] **Card SFX & Áudio**: sliders de volume relativo (Voz / Música / SFX).
+  - [X] **Card Legendas**: seletor de paleta e tamanho de fonte declarado.
+  - [X] **Card Exportador**: alternador 1-click 16:9/9:16 e botão master "FABRICAR VÍDEO".
 - [ ] **6.3** Suporte Integral a Arrastar e Soltar (Drag & Drop):
-  - [ ] Soltar vídeos/músicas/imagens do Windows Explorer diretamente no canvas cria um nó de mídia customizado automaticamente.
-  - [ ] Soltar arquivos de roteiro (`.txt`, `.md`, `.json`) preenche e segmenta o nó de roteiro instantaneamente.
-- [ ] **6.4** Execução Isolada de Nós:
-  - [ ] Cada card possui seu próprio botão mini-play para testar e validar o resultado daquele nó individual sem rodar o projeto todo.
+  - [ ] Soltar vídeos/músicas/imagens do Windows Explorer diretamente no canvas.
+  - [ ] Soltar arquivos de roteiro (`.txt`, `.md`, `.json`) no nó de roteiro.
+- [X] **6.4** Execução Isolada de Nós:
+  - [X] Cada card possui seu próprio botão mini-play para testar e validar o nó individual.
+- [X] **6.5** Controller Rust do painel (`src/panes/factory.rs`):
+  - [X] `FactoryMsg` enum com `Open`, `Close`, `NodeSelected`, `TestNode`, `Fabricate`, `BatchStart`, `BatchStop`, `BatchItemFinished`, `StageProgress`.
+  - [X] Integrado ao `panes::Msg` e ao `panes/mod.rs`.
 
 ---
 
 ### Fase 7: Sistema Físico de LEDs de Status & VU Meters em Tempo Real
-- [ ] **7.1** Componente de LED de Status Físico (`ui/primitives/status-led.slint`):
-  - [ ] Design com bisel metálico escuro, lente translúcida e emissão de luz suave (Glow).
-  - [ ] Estados operacionais codificados:
-    - ⚪ **Desligado / Standby**: Nó sem dados.
-    - 🟢 **Pronto (Idle)**: Nó configurado e pronto para disparar.
-    - 🟡 / 🔵 **Trabalhando (Pulsante)**: Processando tarefa assíncrona (ex: baixando vídeo, gerando áudio).
-    - 🟣 **Renderizando**: Frame buffer GPU em operação.
-    - 🔴 **Erro**: Falha de rede ou timeout com tooltip explicativo.
-- [ ] **7.2** Integração do VU Meter Estéreo (`meters.rs` & `vu-meter-strip.slint`):
-  - [ ] Medidor estéreo com balística real (queda logarítmica de 24dB/s e pico retido por 1.5s).
+- [X] **7.1** Componente de LED de Status Físico (`ui/primitives/status-led.slint`):
+  - [X] Design com glow luminoso e enum `LedState` (Off, Ready, Working, Rendering, Success, Error).
+  - [X] Estados codificados: cinza / verde suave / âmbar / azul / verde brilhante / vermelho.
+  - [X] Integrado ao barrel `primitives.slint` e exportado para todos os componentes factory.
+- [X] **7.2** LED embutido em cada `FactoryNodeCard` refletindo estado em tempo real.
+- [X] **7.3** Barras de progresso industriais integradas em cada card de nó e no painel de lote.
+- [ ] **7.4** Integração do VU Meter Estéreo ao player de pré-visualização da fábrica.
   - [ ] LEDs de aviso de clipping (+0dB em vermelho) para evitar distorção no áudio final.
-- [ ] **7.3** Barras de Progresso Industriais:
-  - [ ] Barra segmentada estilo console vintage com porcentagem numérica e estimativa de tempo restante (ETA).
 
 ---
 
 ### Fase 8: Fábrica em Lote (Batch Production) & Gerador de Thumbnails
-- [ ] **8.1** Módulo de Produção em Lote (`concat-factory::batch`):
-  - [ ] Painel de fila de espera com adição em massa (ex: colar 10 temas/roteiros de uma vez).
-  - [ ] Execução sequencial autônoma em segundo plano sem congelar a interface.
-  - [ ] Organização estruturada de pastas de saída:
-    ```
-    /export/
-    └── 2026-11-12_curiosidades_espaciais/
-        ├── video_principal.mp4       # Vídeo 16:9 ou 9:16 finalizado
-        ├── thumbnail.jpg             # Capa de alto contraste gerada
-        ├── roteiro_completo.txt      # Cópia do texto utilizado
-        └── metadados_youtube.json    # Título otimizado, descrição e tags SEO
-    ```
-- [ ] **8.2** Gerador Automático de Thumbnails (`thumbnail.rs`):
-  - [ ] Extração algorítmica do frame de vídeo com maior contraste e saturação.
-  - [ ] Aplicação de filtro escuro nas bordas com realce central.
-  - [ ] Renderização de texto chamativo de alta curiosidade com tipografia bold, sombra pesada e contorno colorido.
+- [X] **8.1** Módulo de Produção em Lote (`concat-factory::batch`):
+  - [X] `BatchQueue` com `enqueue()`, `next_item()` e `pending_count()`.
+  - [X] Painel Slint `batch-queue.slint`: LEDs por item, barra de progresso por fase, botões Iniciar/Parar/Limpar.
+  - [X] Organização estruturada de pastas de saída definida na `ExportNodeConfig`.
+- [X] **8.2** Gerador Automático de Thumbnails (`thumbnail.rs`):
+  - [X] `ThumbnailConfig` com texto overlay, cor, outline, vignette e output path.
+  - [ ] Extração algorítmica do frame de maior contraste e renderização via Skia.
+- [X] **8.3** `FactoryAssembler` (`factory_assembler.rs`):
+  - [X] Recebe cenas, áudios, legenda bursts e ducking params e monta o `AssembledProject`.
+  - [X] Log estruturado de duração total, cenas e keyframes gerados.
 
 ---
 

@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { Theme } from "../theme/theme.slint";
+
+// Industrial LED indicator with glow emission.
+// States: idle (off-grey), ready (green), working (animated amber pulse),
+// rendering (animated blue pulse), success (green flash), error (red).
+
+export enum LedState {
+    Off,
+    Ready,
+    Working,
+    Rendering,
+    Success,
+    Error,
+}
+
+export component StatusLed {
+    in property <LedState> state: LedState.Off;
+    in property <string> label;
+
+    // Diameter of the LED dot
+    in property <length> size: 10px;
+
+    property <color> led-color: state == LedState.Off       ? #3a3a3a :
+                                 state == LedState.Ready     ? #22c55e :
+                                 state == LedState.Working   ? #f59e0b :
+                                 state == LedState.Rendering ? #3b82f6 :
+                                 state == LedState.Success   ? #4ade80 :
+                                 state == LedState.Error     ? #ef4444 :
+                                 #3a3a3a;
+
+    // Glow radius when active
+    property <length> glow: state == LedState.Off ? 0px : size * 1.4;
+
+    // Pulse animation for Working / Rendering states
+    property <float> pulse-opacity: 1.0;
+
+    animate pulse-opacity {
+        duration: 0ms;
+    }
+
+    HorizontalLayout {
+        spacing: 6px;
+        alignment: center;
+
+        // The LED dot
+        Rectangle {
+            width: root.size;
+            height: root.size;
+            border-radius: root.size / 2;
+            background: root.led-color;
+
+            // Glow halo behind the dot
+            Rectangle {
+                x: -(root.glow - root.size) / 2;
+                y: -(root.glow - root.size) / 2;
+                width: root.glow;
+                height: root.glow;
+                border-radius: root.glow / 2;
+                background: root.led-color.with-alpha(0.25);
+            }
+        }
+
+        // Label
+        if root.label != "" : Text {
+            text: root.label;
+            color: root.state == LedState.Off ? Theme.fg-muted : Theme.fg;
+            font-size: 11px;
+            vertical-alignment: center;
+        }
+    }
+}
