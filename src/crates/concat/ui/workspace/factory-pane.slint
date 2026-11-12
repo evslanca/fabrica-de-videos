@@ -25,30 +25,35 @@ export struct FactoryNodeRow {
 export global FactoryData {
     // Pipeline nodes to render on the canvas
     in-out property <[FactoryNodeRow]> nodes: [
-        { id: "script",  title: "Roteiro",       subtitle: "Divisão em cenas e hook",          status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 120px },
-        { id: "voice",   title: "Voz / TTS",     subtitle: "Edge-TTS · pt-BR-AntonioNeural",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 50px  },
-        { id: "media",   title: "B-Roll",        subtitle: "Pexels · Pixabay · Ken Burns",     status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 200px },
-        { id: "sfx",     title: "SFX & Áudio",   subtitle: "Whoosh · Riser · Auto-Ducking",    status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 50px  },
-        { id: "caption", title: "Legendas",      subtitle: "Hormozi · Safe Zone · Palavras",   status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 200px },
-        { id: "export",  title: "Exportar",      subtitle: "16:9 YouTube · 9:16 Shorts",       status: LedState.Off, progress: 0.0, pos-x: 840px, pos-y: 120px },
+        { id: "script",  title: "Roteiro",       subtitle: "Divisão em cenas e hook",           status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 120px },
+        { id: "voice",   title: "Voz / TTS",     subtitle: "Edge-TTS · Chatterbox · Cloning",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 30px  },
+        { id: "media",   title: "B-Roll",        subtitle: "Pexels · Pixabay · Ken Burns",      status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 150px },
+        { id: "music",   title: "Música IA",     subtitle: "Sem Voz (BGM) · Com Voz (Letra)",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 270px },
+        { id: "sfx",     title: "SFX & Áudio",   subtitle: "Whoosh · Riser · Auto-Ducking",     status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 60px  },
+        { id: "caption", title: "Legendas",      subtitle: "Hormozi · Safe Zone · Palavras",    status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 200px },
+        { id: "export",  title: "Exportar",      subtitle: "16:9 YouTube · 9:16 Shorts",        status: LedState.Off, progress: 0.0, pos-x: 840px, pos-y: 130px },
     ];
 
     // Cubic bezier wire connections between node output and input ports
     in-out property <[WireConnection]> wires: [
-        // script (250, 165) -> voice (300, 95)
-        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 95.0,  active: true  },
-        // script (250, 165) -> media (300, 245)
-        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 245.0, active: true  },
-        // voice (520, 95) -> sfx (570, 95)
-        { start-x: 520.0, start-y: 95.0,  end-x: 570.0, end-y: 95.0,  active: true  },
-        // voice (520, 95) -> caption (570, 245)
-        { start-x: 520.0, start-y: 95.0,  end-x: 570.0, end-y: 245.0, active: false },
-        // media (520, 245) -> export (840, 165)
-        { start-x: 520.0, start-y: 245.0, end-x: 840.0, end-y: 165.0, active: true  },
-        // sfx (790, 95) -> export (840, 165)
-        { start-x: 790.0, start-y: 95.0,  end-x: 840.0, end-y: 165.0, active: false },
-        // caption (790, 245) -> export (840, 165)
-        { start-x: 790.0, start-y: 245.0, end-x: 840.0, end-y: 165.0, active: false },
+        // script (250, 165) -> voice (300, 75)
+        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 75.0,  active: true  },
+        // script (250, 165) -> media (300, 195)
+        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 195.0, active: true  },
+        // script (250, 165) -> music (300, 315)
+        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 315.0, active: true  },
+        // voice (520, 75) -> sfx (570, 105)
+        { start-x: 520.0, start-y: 75.0,  end-x: 570.0, end-y: 105.0, active: true  },
+        // music (520, 315) -> sfx (570, 105)
+        { start-x: 520.0, start-y: 315.0, end-x: 570.0, end-y: 105.0, active: true  },
+        // voice (520, 75) -> caption (570, 245)
+        { start-x: 520.0, start-y: 75.0,  end-x: 570.0, end-y: 245.0, active: false },
+        // media (520, 195) -> export (840, 175)
+        { start-x: 520.0, start-y: 195.0, end-x: 840.0, end-y: 175.0, active: true  },
+        // sfx (790, 105) -> export (840, 175)
+        { start-x: 790.0, start-y: 105.0, end-x: 840.0, end-y: 175.0, active: false },
+        // caption (790, 245) -> export (840, 175)
+        { start-x: 790.0, start-y: 245.0, end-x: 840.0, end-y: 175.0, active: false },
     ];
 
     in-out property <[BatchQueueItem]> batch-items;

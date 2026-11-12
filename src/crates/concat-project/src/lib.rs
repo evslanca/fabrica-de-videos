@@ -27,6 +27,7 @@ pub mod captions_factory;
 pub mod commands;
 pub mod factory_assembler;
 pub mod sfx_library;
+pub mod voice_fx;
 #[cfg(test)]
 mod consolidate_tests;
 pub mod doc;

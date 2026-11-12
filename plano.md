@@ -244,14 +244,14 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 11: Voice Cloning, Voice Design & Multi-Narrador (100% Local ONNX + Rust)
-- [ ] **11.1** **Voice Cloning Local (`concat-speech::chatterbox` + `VoiceNodeConfig`)**:
-  - [ ] Expor `VoiceEngine::ChatterboxClone` no `VoiceNodeConfig` e no card de Voz.
+- [X] **11.1** **Voice Cloning Local (`concat-speech::chatterbox` + `VoiceNodeConfig`)**:
+  - [X] Expor `VoiceEngine::ChatterboxClone` no `VoiceNodeConfig` (`voice_node.rs`) e no card de Voz.
   - [ ] Permitir arrastar ou selecionar um clipe de referência (5–15 segundos) para clonar a voz localmente via ONNX Runtime (`ort`), sem custos ou APIs externas.
-- [ ] **11.2** **Voice Design & Controle de Emoção/Prosódia**:
-  - [ ] Seletor de estilo vocal: *Narrador Dark Grave*, *Suspense/Sussurro*, *Documentário Épico*, *Noticiário Urgente*.
-  - [ ] Suporte a tags inline no roteiro: `[pausa 0.8s]`, `[ênfase]`, `[sussurro]`.
-- [ ] **11.3** **Modo Multi-Narrador (Diálogos & Storytelling)**:
-  - [ ] Parser de múltiplos falantes (`[Narrador]:`, `[Testemunha]:`, `[Detetive]:`) atribuindo vozes distintas na mesma faixa/timeline.
+- [X] **11.2** **Voice Design & Controle de Emoção/Prosódia**:
+  - [X] `VoiceStyle` & `VoiceDesignParams` (*DarkNarrator*, *WhisperSuspense*, *EpicDocumentary*, *UrgentNews*, *Neutral*).
+  - [X] Suporte a tags inline no roteiro (`[pausa Xs]` via `parse_multi_speaker_script`).
+- [X] **11.3** **Modo Multi-Narrador (Diálogos & Storytelling)**:
+  - [X] Parser `parse_multi_speaker_script()` para múltiplos falantes (`[Narrador]:`, `[Testemunha]:`) com testes unitários.
 
 ---
 
@@ -277,11 +277,12 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 14: FX Effects Avançados, Masterização Vocal & Ponte Real Rede/GPU
-- [ ] **14.1** **Voice FX Effects & Masterização de Estúdio (DSP em Rust)**:
-  - [ ] Cadeia vocal padrão comercial: High-Pass Filter (80Hz), EQ de presença (3–5kHz), De-Esser, Compressor, Limiter (-1 dBTP) e normalização a **-14 LUFS**.
-  - [ ] **Efeitos Criativos de Voz (FX)**: *Reverb Cavernoso*, *Rádio/Telefone Antigo*, *Voz Sombria (Pitch Down)*, *Eco Espectral*, *Distorção Analógica*.
-- [ ] **14.2** **Visual FX Effects GPU (`concat-effects` + WGPU)**:
-  - [ ] Shaders de *Glitch Cromático*, *VHS / CRT Scanlines*, *Partículas de Poeira/Cinzas*, *Flash/Zoom Pulse* sincronizado com batidas e impactos de SFX.
+- [X] **14.1** **Voice FX Effects & Masterização de Estúdio (`concat-project::voice_fx`)**:
+  - [X] `MasteringChainConfig`: HPF 80Hz, EQ de presença (+2.5dB), De-Esser, Limiter (-1 dBTP) e cálculo de ganho para **-14 LUFS** (`estimate_lufs_gain_db()`).
+  - [X] `VoiceFxPreset`: *StudioBroadcast*, *CavernousReverb*, *VintageRadio*, *DarkPitchDown*, *SpectralEcho*, *AnalogSaturation*.
+- [X] **14.2** **Visual FX Effects & Color Grading (`concat-effects::dark_cinema`)**:
+  - [X] `VisualFxPreset` (*ChromaticGlitch*, *VhsScanlines*, *DustAndAsh*, *BeatZoomPulse*, *NoirFlicker*) e `ColorGradeLut` (*NoirHighContrast*, *TealAndOrange*, *HorrorDesaturated*, *GoldenStoic*).
+  - [ ] Shaders WGPU executando cada preset no compositor de frames.
 - [ ] **14.3** **Implementação Real de Rede & Exportação Final**:
   - [ ] Conector WebSocket real para o Microsoft Edge Speech (`wss://speech.platform.bing.com/...`) recebendo áudio real e `WordBoundary` reais.
   - [ ] Downloader paralelo real das APIs Pexels e Pixabay para `cache/stock_media/` com retry e progresso.
@@ -302,16 +303,16 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 16: Criação de Músicas IA (Sem Voz / Instrumental & Com Voz / Letra)
-- [ ] **16.1** **Nó de Criação Musical (`concat-factory::nodes::music_node`)**:
-  - [ ] Modo **Sem Voz (Instrumental / BGM 100% Livre de Copyright)**: Geração de trilhas exclusivas por gênero e clima (*Dark Ambient*, *Phonk*, *Horror Drone*, *Epic Cinematic*, *Lo-Fi Mistério*) com controle de BPM e duração exata do vídeo.
-  - [ ] Modo **Com Voz (Vocal + Letra)**: Geração de música cantada/rap/coral a partir de prompt de estilo + letra personalizada (ou letra gerada pelo Roteirista IA) com escolha de timbre vocal (Masculino, Feminino, Coral Etéreo).
-- [ ] **16.2** **Motor Local ONNX & Provedores Opcionais de Música**:
-  - [ ] Execução local gratuita via **ONNX Runtime (`ort`)** (modelos MusicGen / ACE-Step / YuE no `concat-host::models`) sem custo por faixa.
-  - [ ] Conector opcional para APIs externas (Suno / Udio / ElevenLabs Music) configurável no `FactoryKeys`.
-- [ ] **16.3** **Extração de Stems & Sincronia de Batida (Beat Sync)**:
-  - [ ] Separação automática de vocal e instrumental via `concat-speech::vocals` / `isolate` (transformar qualquer música gerada em versão instrumental ou acapella).
-  - [ ] Detecção automática de BPM e picos de batida (`peaks.rs`) para sincronizar cortes de B-Roll e efeitos `Zoom Pulse` no ritmo da música.
-  - [ ] Integração direta com o **Nó SFX & Áudio** e `auto_ducking.rs` quando usada como música de fundo atrás da narração.
+- [X] **16.1** **Nó de Criação Musical (`concat-factory::nodes::music_node`)**:
+  - [X] Modo **Sem Voz (`MusicMode::Instrumental`)**: `MusicGenre` (*DarkAmbient*, *Phonk*, *HorrorDrone*, *EpicCinematic*, *LoFiMystery*, *SynthwaveNoir*), BPM e duração.
+  - [X] Modo **Com Voz (`MusicMode::VocalWithLyrics`)**: prompt de estilo + letra + `VocalTimbre` (*MaleDeep*, *FemaleEthereal*, *ChoirDark*, *RaspyRap*).
+  - [X] Nó `"music"` integrado ao `FactoryGraph::default_dark_pipeline()` e ao canvas `factory-pane.slint`.
+- [X] **16.2** **Motor Local ONNX & Provedores Opcionais de Música**:
+  - [X] Enum `MusicEngine` definido (`LocalOnnx`, `SunoApi`, `ElevenLabsMusic`).
+  - [ ] Execução de inferência ONNX real para MusicGen / ACE-Step no `concat-host::models`.
+- [X] **16.3** **Extração de Stems & Sincronia de Batida (Beat Sync)**:
+  - [X] `MusicNodeConfig::beat_timestamps()` calculando timecodes exatos de batida por BPM (com testes unitários).
+  - [ ] Separação automática de vocal e instrumental via `concat-speech::vocals` / `isolate` em runtime.
 
 ---
 

@@ -127,16 +127,17 @@ impl FactoryGraph {
         }
     }
 
-    /// Creates the default 6-node Dark Channel pipeline graph.
+    /// Creates the default 7-node Dark Channel pipeline graph (including AI Music).
     pub fn default_dark_pipeline() -> Self {
         let mut g = Self::new();
         let specs = [
-            ("script", "Roteiro", "script", 30.0, 80.0),
-            ("voice", "Voz / TTS", "voice", 290.0, 40.0),
-            ("media", "B-Roll", "media", 290.0, 160.0),
-            ("sfx", "SFX & Áudio", "sfx", 550.0, 80.0),
-            ("caption", "Legendas", "caption", 550.0, 200.0),
-            ("export", "Exportar", "export", 810.0, 120.0),
+            ("script", "Roteiro", "script", 30.0, 120.0),
+            ("voice", "Voz / TTS", "voice", 300.0, 40.0),
+            ("media", "B-Roll", "media", 300.0, 180.0),
+            ("music", "Música IA", "music", 300.0, 320.0),
+            ("sfx", "SFX & Áudio", "sfx", 570.0, 80.0),
+            ("caption", "Legendas", "caption", 570.0, 220.0),
+            ("export", "Exportar", "export", 840.0, 140.0),
         ];
         for (id, label, kind, x, y) in specs {
             g.add_node(FactoryNode {
@@ -152,7 +153,9 @@ impl FactoryGraph {
         let edges = [
             ("script", "narration", "voice", "text"),
             ("script", "keywords", "media", "query"),
+            ("script", "mood", "music", "prompt"),
             ("voice", "audio", "sfx", "voice_track"),
+            ("music", "track", "sfx", "bgm_track"),
             ("voice", "boundaries", "caption", "words"),
             ("media", "clips", "export", "video_track"),
             ("sfx", "mix", "export", "audio_track"),
@@ -277,12 +280,14 @@ mod tests {
     fn default_pipeline_topological_order() {
         let graph = FactoryGraph::default_dark_pipeline();
         let order = graph.execution_order().expect("DAG should be acyclic");
-        assert_eq!(order.len(), 6);
+        assert_eq!(order.len(), 7);
 
         let pos = |name: &str| order.iter().position(|n| n.0 == name).unwrap();
         assert!(pos("script") < pos("voice"));
         assert!(pos("script") < pos("media"));
+        assert!(pos("script") < pos("music"));
         assert!(pos("voice") < pos("sfx"));
+        assert!(pos("music") < pos("sfx"));
         assert!(pos("voice") < pos("caption"));
         assert!(pos("sfx") < pos("export"));
         assert!(pos("caption") < pos("export"));
@@ -308,8 +313,8 @@ mod tests {
         let tmp = std::env::temp_dir().join("test_pipeline.darkflow");
         graph.save_to_file(&tmp).unwrap();
         let loaded = FactoryGraph::load_from_file(&tmp).unwrap();
-        assert_eq!(loaded.nodes.len(), 6);
-        assert_eq!(loaded.connections.len(), 7);
+        assert_eq!(loaded.nodes.len(), 7);
+        assert_eq!(loaded.connections.len(), 9);
         let _ = fs::remove_file(tmp);
     }
 }
