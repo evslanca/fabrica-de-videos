@@ -11,13 +11,21 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SfxAsset {
+    /// Quick transition whoosh for fast cuts.
     WhooshFast,
+    /// Reverberant whoosh for dramatic scene shifts.
     WhooshEcho,
+    /// Low-frequency sub-bass drop for hook or reveal hits.
     SubBassDrop,
+    /// Heavy cinematic brass/braam impact.
     CinematicBraam,
+    /// Rising tension swell leading into a climax.
     TensionRiser,
+    /// Rhythmic heartbeat loop for suspenseful segments.
     HeartbeatLoop,
+    /// Subtle UI pop for caption bursts.
     CaptionPop,
+    /// Sharp glass shatter accent for shock moments.
     GlassBreak,
 }
 

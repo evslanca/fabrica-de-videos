@@ -8,6 +8,7 @@
 //! fully-timed Concat project `Document` ready for GPU rendering.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::auto_ducking::{DuckingParams, GainKeyframe, build_ducking_keyframes};
@@ -93,14 +94,6 @@ impl AssembledProject {
         let ducking_keyframes =
             build_ducking_keyframes(&voice_windows, total_duration, ducking_params);
 
-        log::info!(
-            "Factory Assembler: {} scenes, {:.1}s total, {} caption bursts, {} ducking keyframes",
-            scenes.len(),
-            total_duration,
-            caption_bursts.len(),
-            ducking_keyframes.len()
-        );
-
         Self {
             total_duration_seconds: total_duration,
             width,
@@ -172,7 +165,7 @@ impl AssembledProject {
             clip_seq += 1;
             v_clip.media_id = v_media_id;
             v_clip.flip_h = scene.mirror_horizontal;
-            clips.push(v_clip);
+            clips.push(Arc::new(v_clip));
 
             // T2: Narration Audio (if present)
             if let Some(audio_path) = &scene.audio_path {
@@ -204,7 +197,7 @@ impl AssembledProject {
                 );
                 clip_seq += 1;
                 a_clip.media_id = a_media_id;
-                clips.push(a_clip);
+                clips.push(Arc::new(a_clip));
             }
         }
 
@@ -244,7 +237,7 @@ impl AssembledProject {
                 .map(|k| k.gain as f64)
                 .min_by(|a, b| a.total_cmp(b))
                 .unwrap_or(0.35);
-            clips.push(bgm_clip);
+            clips.push(Arc::new(bgm_clip));
         }
 
         // T4: Caption Bursts
@@ -265,7 +258,7 @@ impl AssembledProject {
                 content: text,
                 ..TextStyle::default()
             });
-            clips.push(t_clip);
+            clips.push(Arc::new(t_clip));
         }
 
         let _ = media_seq;
