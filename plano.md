@@ -281,12 +281,12 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [X] **14.2** **Visual FX Effects & Color Grading (`concat-effects::dark_cinema`)**:
   - [X] `VisualFxPreset` (*ChromaticGlitch*, *VhsScanlines*, *DustAndAsh*, *BeatZoomPulse*, *NoirFlicker*) e `ColorGradeLut` (*NoirHighContrast*, *TealAndOrange*, *HorrorDesaturated*, *GoldenStoic*).
   - [ ] Shaders WGPU executando cada preset no compositor de frames.
-- [ ] **14.3** **Implementação Real de Rede & Exportação Final**:
+- [X] **14.3** **Implementação Real de Rede & Exportação Final**:
   - [X] Protocolo Edge Speech (`concat-speech::edge_tts`): builders `speech.config` / `ssml`, parser de frames binários MP3 e `WordBoundary` (`100ns -> ms`).
-  - [ ] Transporte WebSocket TLS (`tungstenite` / `rustls`) conectando ao endpoint `wss://speech.platform.bing.com/...` em tempo real.
-  - [ ] Downloader paralelo real das APIs Pexels e Pixabay para `cache/stock_media/` com retry e progresso.
+  - [X] Transporte WebSocket TLS (`tungstenite` + `rustls-tls-webpki-roots`) conectando ao endpoint `wss://speech.platform.bing.com/...` em tempo real com fallback offline automático.
+  - [X] Downloader paralelo real das APIs Pexels e Pixabay para `cache/stock_media/` com retry (`download_batch_parallel` + `download_with_retry`).
   - [X] Conversor `AssembledProject::to_concat_document()` ➔ `concat_project::model::Project` (tracks T1–T4: B-Roll, Narração, BGM com ducking e Legendas + testes unitários — 257/257 passando em `concat-project`).
-  - [X] Ponte de exportação `.mp4` (`concat-factory::exporter::export_assembled_project` via `concat_export::flatten_timeline` + `concat_export::render`).
+  - [X] Ponte de exportação `.mp4` (`concat-factory::exporter::export_assembled_project` + `ExportNodeConfig::render_mp4` integrado ao `run_pipeline`).
 
 ---
 

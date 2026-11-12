@@ -8,8 +8,9 @@
 //! `concat-effects`, and `concat-project` into a final [`AssembledProject`].
 
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use concat_effects::dark_cinema::AntiReusedFilterParams;
-use concat_media::stock::{StockClient, StockSearchRequest};
+use concat_media::stock::{StockClient, StockMediaItem, StockSearchRequest};
 use concat_project::auto_ducking::DuckingParams;
 use concat_project::captions_factory::{BurstConfig, build_caption_bursts};
 use concat_project::factory_assembler::{AssembledProject, AssembledScene};
@@ -35,6 +36,9 @@ pub enum PipelineError {
     /// Speech synthesis I/O error.
     #[error("voice synthesis failed: {0}")]
     VoiceIo(#[from] std::io::Error),
+    /// Final MP4 export error.
+    #[error("mp4 export failed: {0}")]
+    ExportFailed(String),
 }
 
 /// Complete configuration for a single video factory run.
@@ -54,8 +58,10 @@ pub struct FactoryPipelineConfig {
     pub caption: CaptionNodeConfig,
     /// Export resolution and target folder.
     pub export: ExportNodeConfig,
-    /// Optional Pexels key (falls back to free/local vault when None).
+    /// Optional Pexels key (falls back to Pixabay/local vault when None).
     pub pexels_key: Option<String>,
+    /// Optional Pixabay key (falls back to local vault when None).
+    pub pixabay_key: Option<String>,
 }
 
 /// Output artifacts produced by a pipeline run.
@@ -69,6 +75,8 @@ pub struct PipelineOutput {
     pub sfx_events: Vec<SfxEvent>,
     /// Anti-reused content filter settings applied to B-Rolls.
     pub anti_reused_filters: AntiReusedFilterParams,
+    /// Rendered MP4 path when `cfg.export.render_mp4` is enabled.
+    pub exported_mp4: Option<PathBuf>,
 }
 
 /// Runs the full dark video production pipeline synchronously on the worker thread.
@@ -102,12 +110,10 @@ pub fn run_pipeline(
         VideoAspect::YouTube16x9 => "landscape",
         VideoAspect::Vertical9x16 => "portrait",
     };
-    let stock = StockClient::new(cfg.pexels_key.clone());
-    let mut assembled_scenes = Vec::with_capacity(cfg.script.scenes.len());
-    let mut cursor = 0.0_f32;
-    let mut cut_times = Vec::new();
+    let stock = StockClient::new(cfg.pexels_key.clone()).with_pixabay_key(cfg.pixabay_key.clone());
+    let mut selected_items: Vec<StockMediaItem> = Vec::with_capacity(cfg.script.scenes.len());
 
-    for (idx, seg) in cfg.script.scenes.iter().enumerate() {
+    for seg in &cfg.script.scenes {
         let query = if seg.visual_keywords.is_empty() {
             cfg.media.default_query.clone()
         } else {
@@ -118,9 +124,28 @@ pub fn run_pipeline(
             orientation: orientation.to_string(),
             per_page: 2,
         });
-        let clip_path = candidates
-            .first()
-            .map(|c| PathBuf::from(&c.download_url))
+        if let Some(first) = candidates.into_iter().next() {
+            selected_items.push(first);
+        }
+    }
+
+    let stock_cache_dir = cfg.export.output_dir.join("cache").join("stock_media");
+    let downloaded_paths = StockClient::download_batch_parallel(&selected_items, &stock_cache_dir);
+
+    let mut assembled_scenes = Vec::with_capacity(cfg.script.scenes.len());
+    let mut cursor = 0.0_f32;
+    let mut cut_times = Vec::new();
+
+    for (idx, seg) in cfg.script.scenes.iter().enumerate() {
+        let clip_path = downloaded_paths
+            .get(idx)
+            .and_then(|res| res.as_ref().ok())
+            .cloned()
+            .or_else(|| {
+                selected_items
+                    .get(idx)
+                    .map(|c| PathBuf::from(&c.download_url))
+            })
             .unwrap_or_else(|| PathBuf::from("assets/vault/dark_default.mp4"));
 
         if idx > 0 {
@@ -193,6 +218,32 @@ pub fn run_pipeline(
         cfg.export.aspect.height(),
         &ducking_params,
     );
+
+    let exported_mp4 = if cfg.export.render_mp4 {
+        on_progress("export", 0.6, "Renderizando MP4 final...");
+        let mp4_path = cfg
+            .export
+            .output_dir
+            .join(format!("{}.mp4", cfg.export.project_name));
+        let cancel = AtomicBool::new(false);
+        let opts = crate::exporter::FactoryExportOptions {
+            output_path: mp4_path,
+            ..Default::default()
+        };
+        let out = crate::exporter::export_assembled_project(&assembled, &opts, &cancel, |f, tot, stage| {
+            let ratio = if tot > 0 {
+                0.6 + 0.35 * (f as f32 / tot as f32).clamp(0.0, 1.0)
+            } else {
+                0.75
+            };
+            on_progress("export", ratio, stage);
+        })
+        .map_err(PipelineError::ExportFailed)?;
+        Some(out)
+    } else {
+        None
+    };
+
     on_progress("export", 1.0, "Projeto montado com sucesso");
 
     Ok(PipelineOutput {
@@ -200,6 +251,7 @@ pub fn run_pipeline(
         voice_result,
         sfx_events,
         anti_reused_filters: AntiReusedFilterParams::default(),
+        exported_mp4,
     })
 }
 

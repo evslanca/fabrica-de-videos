@@ -116,11 +116,41 @@ impl EdgeTtsClient {
     }
 
     /// Synthesizes text to a local audio file and calculates word boundaries.
+    ///
+    /// Attempts live Microsoft Edge Speech synthesis over TLS WebSocket first,
+    /// falling back to a local silent WAV placeholder + estimated word boundaries
+    /// when offline or unreachable.
     pub fn synthesize_to_file(&self, text: &str, output_path: &Path) -> std::io::Result<SynthesisResult> {
         let ssml = self.build_ssml(text);
         log::info!("Synthesizing speech with Edge-TTS voice: {}", self.voice);
 
-        // Word boundary estimation: ~220 words per minute average
+        if let Some(parent) = output_path.parent()
+            && !parent.as_os_str().is_empty()
+        {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        if !output_path.exists() {
+            match self.synthesize_edge_websocket(&ssml) {
+                Ok((audio_bytes, boundaries)) if !audio_bytes.is_empty() => {
+                    std::fs::write(output_path, &audio_bytes)?;
+                    let duration_seconds = boundaries
+                        .last()
+                        .map(|b| (b.audio_offset_ms + b.duration_ms) as f32 / 1000.0)
+                        .unwrap_or(1.0)
+                        .max(0.5);
+                    return Ok(SynthesisResult {
+                        audio_path: output_path.to_path_buf(),
+                        duration_seconds,
+                        word_boundaries: boundaries,
+                    });
+                }
+                Ok(_) => log::warn!("Edge-TTS WebSocket returned empty audio; using offline fallback"),
+                Err(err) => log::warn!("Edge-TTS WebSocket unavailable ({err}); using offline fallback"),
+            }
+        }
+
+        // Offline / fallback word boundary estimation: ~220 words per minute average
         let words: Vec<&str> = text.split_whitespace().collect();
         let word_count = words.len().max(1);
         let rate_factor = 1.0 + (self.rate_percent as f32 / 100.0);
@@ -140,9 +170,6 @@ impl EdgeTtsClient {
 
         // Generate audio placeholder / WAV container header if file does not exist
         if !output_path.exists() {
-            if let Some(parent) = output_path.parent() {
-                std::fs::create_dir_all(parent)?;
-            }
             let mut f = File::create(output_path)?;
             // Write standard 44-byte minimal silent WAV header (44.1kHz, 16-bit stereo)
             let header = generate_wav_header(estimated_total_secs, 44100, 2);
@@ -154,6 +181,65 @@ impl EdgeTtsClient {
             duration_seconds: estimated_total_secs,
             word_boundaries: boundaries,
         })
+    }
+
+    /// Connects to the Edge Speech WebSocket over TLS, sends `speech.config` + `ssml`,
+    /// and collects MP3 audio chunks and `WordBoundary` metadata events.
+    pub fn synthesize_edge_websocket(
+        &self,
+        ssml: &str,
+    ) -> Result<(Vec<u8>, Vec<WordBoundary>), String> {
+        use tungstenite::Message;
+
+        let req_id = self.cache_key_hex(ssml);
+        let url = format!(
+            "{EDGE_TTS_WSS_ENDPOINT}?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId={req_id}"
+        );
+        let (mut socket, _) =
+            tungstenite::connect(&url).map_err(|e| format!("ws connect failed: {e}"))?;
+
+        let ts = "2026-11-12T19:00:00.000Z";
+        socket
+            .send(Message::Text(build_speech_config_message(ts).into()))
+            .map_err(|e| format!("ws send speech.config failed: {e}"))?;
+        socket
+            .send(Message::Text(build_ssml_request_message(&req_id, ts, ssml).into()))
+            .map_err(|e| format!("ws send ssml failed: {e}"))?;
+
+        let mut audio_buf = Vec::new();
+        let mut boundaries = Vec::new();
+
+        loop {
+            match socket.read() {
+                Ok(Message::Binary(frame)) => {
+                    if let Some(chunk) = extract_audio_chunk_from_binary_frame(&frame) {
+                        audio_buf.extend_from_slice(chunk);
+                    }
+                }
+                Ok(Message::Text(txt)) => {
+                    let text_str: &str = txt.as_ref();
+                    if text_str.contains("Path:audio.metadata")
+                        && let Some((_, json_part)) = text_str.split_once("\r\n\r\n")
+                    {
+                        boundaries.extend(parse_word_boundary_json(json_part));
+                    }
+                    if text_str.contains("Path:turn.end") {
+                        break;
+                    }
+                }
+                Ok(Message::Close(_)) => break,
+                Ok(_) => {}
+                Err(e) => {
+                    if !audio_buf.is_empty() {
+                        break;
+                    }
+                    return Err(format!("ws read failed: {e}"));
+                }
+            }
+        }
+
+        let _ = socket.close(None);
+        Ok((audio_buf, boundaries))
     }
 }
 

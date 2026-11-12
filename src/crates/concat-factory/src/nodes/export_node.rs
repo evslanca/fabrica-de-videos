@@ -20,6 +20,9 @@ pub struct ExportNodeConfig {
     pub output_dir: PathBuf,
     /// Custom project name / slug.
     pub project_name: String,
+    /// Whether to immediately render the `.mp4` via `concat-export` after timeline assembly.
+    #[serde(default)]
+    pub render_mp4: bool,
 }
 
 impl Default for ExportNodeConfig {
@@ -30,6 +33,7 @@ impl Default for ExportNodeConfig {
             video_bitrate_kbps: 12000,
             output_dir: PathBuf::from("export"),
             project_name: "dark_video_01".to_string(),
+            render_mp4: false,
         }
     }
 }

@@ -242,6 +242,57 @@ impl StockClient {
         fs::rename(&part, &target)?;
         Ok(target)
     }
+
+    /// Downloads a stock item with bounded retries before returning an error.
+    pub fn download_with_retry(
+        item: &StockMediaItem,
+        cache_dir: &Path,
+        max_attempts: usize,
+    ) -> io::Result<PathBuf> {
+        let attempts = max_attempts.max(1);
+        let mut last_err = None;
+        for attempt in 1..=attempts {
+            match Self::download_to_cache(item, cache_dir) {
+                Ok(path) => return Ok(path),
+                Err(err) => {
+                    log::warn!(
+                        "Stock download attempt {attempt}/{attempts} failed for '{}': {err}",
+                        item.id
+                    );
+                    last_err = Some(err);
+                }
+            }
+        }
+        Err(last_err.unwrap_or_else(|| io::Error::other("stock download failed")))
+    }
+
+    /// Downloads multiple stock items in parallel using scoped OS threads,
+    /// preserving the input order in the returned results.
+    pub fn download_batch_parallel(
+        items: &[StockMediaItem],
+        cache_dir: &Path,
+    ) -> Vec<Result<PathBuf, String>> {
+        if items.is_empty() {
+            return Vec::new();
+        }
+        std::thread::scope(|scope| {
+            let handles: Vec<_> = items
+                .iter()
+                .map(|item| {
+                    scope.spawn(move || {
+                        Self::download_with_retry(item, cache_dir, 2).map_err(|e| e.to_string())
+                    })
+                })
+                .collect();
+            handles
+                .into_iter()
+                .map(|h| {
+                    h.join()
+                        .unwrap_or_else(|_| Err("stock download worker panicked".to_string()))
+                })
+                .collect()
+        })
+    }
 }
 
 fn parse_pexels_response(parsed: PexelsVideoResponse) -> Vec<StockMediaItem> {
@@ -345,5 +396,16 @@ mod tests {
         assert!(!items.is_empty());
         assert_eq!(items[0].width, 1080);
         assert_eq!(items[0].height, 1920);
+    }
+
+    #[test]
+    fn parallel_batch_download_preserves_order_for_local_vault_items() {
+        let client = StockClient::default();
+        let items = client.search_videos(&StockSearchRequest::default());
+        let cache = std::env::temp_dir().join("concat_stock_parallel_test");
+        let results = StockClient::download_batch_parallel(&items, &cache);
+        assert_eq!(results.len(), items.len());
+        assert!(results.iter().all(|r| r.is_ok()));
+        let _ = fs::remove_dir_all(&cache);
     }
 }
