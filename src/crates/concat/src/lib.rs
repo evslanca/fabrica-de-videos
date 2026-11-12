@@ -2236,6 +2236,31 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         state.handle(Msg::Export(ExportMsg::Start));
     }));
 
+    // ── factory workflow ──
+    {
+        let factory_ui = app.global::<ui::FactoryData>();
+        factory_ui.on_fabricate(on_window!(|state| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::Fabricate));
+        }));
+        factory_ui.on_node_selected(on_window!(|state, id: SharedString, kind: SharedString| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::NodeSelected {
+                id: id.to_string(),
+                kind: kind.to_string(),
+            }));
+        }));
+        factory_ui.on_test_node(on_window!(|state, id: SharedString| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::TestNode {
+                id: id.to_string(),
+            }));
+        }));
+        factory_ui.on_start_batch(on_window!(|state| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::BatchStart));
+        }));
+        factory_ui.on_stop_batch(on_window!(|state| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::BatchStop));
+        }));
+    }
+
     // ── settings ──
     app.on_settings_page_changed(on_window!(|state, index: i32| {
         state.handle(Msg::Settings(SettingsMsg::PageChanged(index)));

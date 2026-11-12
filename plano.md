@@ -125,7 +125,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Cache via geração de header WAV local (`audio/dark_tts_<hash>.wav`).
 - [X] **2.2** Desenvolver provider `OpenAiTts` (`concat-speech::cloud_tts::OpenAiTtsConfig`) com suporte aos modelos `tts-1` e `tts-1-hd`.
 - [X] **2.3** Desenvolver provider `ElevenLabsTts` (`concat-speech::cloud_tts::ElevenLabsTtsConfig`) com controle de estabilidade, similaridade e modelo `eleven_multilingual_v2`.
-- [ ] **2.4** Cache de áudio com hash criptográfico SHA-256 do texto + voz + velocidade.
+- [X] **2.4** Cache de áudio com hash determinístico (`cache_key_hex`) do texto + voz + velocidade + tom.
 - [ ] **2.5** Normalização e Masterização Automática de Áudio (-14 LUFS para YouTube).
 
 ---
@@ -192,7 +192,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Cada card possui seu próprio botão mini-play para testar e validar o nó individual.
 - [X] **6.5** Controller Rust do painel (`src/panes/factory.rs`):
   - [X] `FactoryMsg` enum com `Open`, `Close`, `NodeSelected`, `TestNode`, `Fabricate`, `BatchStart`, `BatchStop`, `BatchItemFinished`, `StageProgress`.
-  - [X] Integrado ao `panes::Msg` e ao `panes/mod.rs`.
+  - [X] Integrado ao `panes::Msg`, `Studio::handle`, `dock.rs`, `pane-switcher.slint`, `seat.slint`, `app.slint` e callbacks em `lib.rs`.
 
 ---
 
@@ -227,8 +227,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Armazenamento local em `AppDirs::config` (`factory_keys.json`) para chaves opcionais (OpenAI, ElevenLabs, Pexels, Pixabay).
 - [X] **9.2** Garantia do Modo "Zero Reais / Zero Chaves":
   - [X] `FactoryKeys::any_configured()` e fallback automático para Edge-TTS e vault/stock gratuito.
-- [ ] **9.3** Seletor de Idioma e Dicionário de Pronúncia:
-  - [ ] Tabela de substituição fonética para siglas ou palavras difíceis (ex: "NASA" -> "Naza", "EUA" -> "Estados Unidos").
+- [X] **9.3** Dicionário de Pronúncia (`PronunciationDict` em `edge_tts.rs`):
+  - [X] Tabela de substituição fonética para siglas e termos (ex: "NASA" -> "Naza", "EUA" -> "Estados Unidos", "OVNI" -> "óvni").
 
 ---
 

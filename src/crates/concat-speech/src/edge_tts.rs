@@ -75,6 +75,24 @@ impl EdgeTtsClient {
         }
     }
 
+    /// Computes a deterministic cache key hex string for `(voice, rate, pitch, text)`
+    /// so identical narration segments are reused from disk without re-synthesizing.
+    pub fn cache_key_hex(&self, text: &str) -> String {
+        // FNV-1a 64-bit hash — zero external dependency, deterministic across runs.
+        let mut hash: u64 = 0xcbf29ce484222325;
+        let mut feed = |bytes: &[u8]| {
+            for &b in bytes {
+                hash ^= b as u64;
+                hash = hash.wrapping_mul(0x100000001b3);
+            }
+        };
+        feed(self.voice.as_bytes());
+        feed(&self.rate_percent.to_le_bytes());
+        feed(&self.pitch_percent.to_le_bytes());
+        feed(text.as_bytes());
+        format!("{:016x}", hash)
+    }
+
     /// Builds the SSML (Speech Synthesis Markup Language) payload required by Microsoft Speech.
     pub fn build_ssml(&self, text: &str) -> String {
         let rate_str = format!("{:+}%", self.rate_percent);
@@ -148,6 +166,39 @@ fn quick_xml_escape(text: &str) -> String {
         .replace('\'', "&apos;")
 }
 
+/// Phonetic pronunciation dictionary for acronyms and foreign terms in narration.
+#[derive(Debug, Clone)]
+pub struct PronunciationDict {
+    /// Ordered `(pattern, phonetic_replacement)` pairs.
+    pub entries: Vec<(String, String)>,
+}
+
+impl Default for PronunciationDict {
+    fn default() -> Self {
+        Self {
+            entries: vec![
+                ("NASA".to_string(), "Naza".to_string()),
+                ("EUA".to_string(), "Estados Unidos".to_string()),
+                ("FBI".to_string(), "Éfe Bê I".to_string()),
+                ("CIA".to_string(), "Cê I A".to_string()),
+                ("OVNI".to_string(), "óvni".to_string()),
+                ("IA".to_string(), "Inteligência Artificial".to_string()),
+            ],
+        }
+    }
+}
+
+impl PronunciationDict {
+    /// Applies phonetic replacements to the narration text before TTS synthesis.
+    pub fn apply(&self, text: &str) -> String {
+        let mut out = text.to_string();
+        for (pat, rep) in &self.entries {
+            out = out.replace(pat, rep);
+        }
+        out
+    }
+}
+
 /// Minimal standard RIFF/WAV PCM header generator.
 fn generate_wav_header(duration_seconds: f32, sample_rate: u32, channels: u16) -> Vec<u8> {
     let bytes_per_sample = 2u16; // 16-bit PCM
@@ -202,5 +253,22 @@ mod tests {
         assert_eq!(&bytes[0..4], b"RIFF");
         assert_eq!(&bytes[8..12], b"WAVE");
         let _ = std::fs::remove_file(&out);
+    }
+
+    #[test]
+    fn pronunciation_dict_and_cache_key_work() {
+        let dict = PronunciationDict::default();
+        let normalized = dict.apply("A NASA e a CIA investigaram o OVNI nos EUA.");
+        assert!(normalized.contains("Naza"));
+        assert!(normalized.contains("Estados Unidos"));
+        assert!(normalized.contains("óvni"));
+
+        let client = EdgeTtsClient::default();
+        let k1 = client.cache_key_hex("teste 1");
+        let k2 = client.cache_key_hex("teste 1");
+        let k3 = client.cache_key_hex("teste 2");
+        assert_eq!(k1, k2);
+        assert_ne!(k1, k3);
+        assert_eq!(k1.len(), 16);
     }
 }
