@@ -257,14 +257,33 @@ export component FactoryPane {
                         }
                     }
 
-                    // Stereo VU meter strip
-                    VerticalLayout {
-                        width: 160px;
+                    // Stereo VU meter strip + clipping warning LEDs (+0 dB red)
+                    HorizontalLayout {
+                        spacing: 6px;
                         alignment: center;
-                        spacing: 3px;
 
-                        LevelMeter { value: FactoryData.vu-left;  thickness: 4px; }
-                        LevelMeter { value: FactoryData.vu-right; thickness: 4px; }
+                        VerticalLayout {
+                            width: 140px;
+                            alignment: center;
+                            spacing: 3px;
+
+                            LevelMeter { value: FactoryData.vu-left;  thickness: 4px; }
+                            LevelMeter { value: FactoryData.vu-right; thickness: 4px; }
+                        }
+
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 2px;
+
+                            StatusLed {
+                                state: FactoryData.vu-left >= 0.99 ? LedState.Error : LedState.Off;
+                                size: 7px;
+                            }
+                            StatusLed {
+                                state: FactoryData.vu-right >= 0.99 ? LedState.Error : LedState.Off;
+                                size: 7px;
+                            }
+                        }
                     }
 
                     // FABRICATE master button

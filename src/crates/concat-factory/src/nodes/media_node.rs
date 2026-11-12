@@ -46,6 +46,9 @@ pub struct MediaNodeConfig {
     pub enable_anti_reused_filter: bool,
     /// Downloaded clips mapped to scene indices.
     pub scene_clips: Vec<SceneMediaClip>,
+    /// User-supplied local B-Roll files (e.g. via Drag & Drop onto the Factory canvas).
+    #[serde(default)]
+    pub custom_broll_paths: Vec<PathBuf>,
 }
 
 impl Default for MediaNodeConfig {
@@ -55,6 +58,7 @@ impl Default for MediaNodeConfig {
             default_query: "dark mystery cinematic".to_string(),
             enable_anti_reused_filter: true,
             scene_clips: Vec::new(),
+            custom_broll_paths: Vec::new(),
         }
     }
 }

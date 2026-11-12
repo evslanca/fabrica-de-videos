@@ -141,7 +141,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] **Micro Speed Ramping**: Ajuste dinâmico de velocidade (0.97x a 1.03x) para alterar a assinatura digital do vídeo.
   - [X] **Efeito Ken Burns Procedural**: Suave aproximação (1.0x -> 1.15x) ou afastamento com aceleração cúbica (Ease-In-Out).
   - [X] **Camada Analógica de Textura**: Film grain 35mm + vinheta com cantos escurecidos cinematográficos.
-  - [ ] **Color Grading Dark**: LUTs de alto contraste e sombras profundas embutidos diretamente no pipeline WGPU.
+  - [X] **Color Grading Dark**: LUTs de alto contraste e sombras profundas (`apply_color_grade_rgba` + `apply_vignette_and_grain_rgba` em `concat-effects::dark_cinema`).
 
 ---
 
@@ -185,9 +185,9 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] **Card SFX & Áudio**: sliders de volume relativo (Voz / Música / SFX).
   - [X] **Card Legendas**: seletor de paleta e tamanho de fonte declarado.
   - [X] **Card Exportador**: alternador 1-click 16:9/9:16 e botão master "FABRICAR VÍDEO".
-- [ ] **6.3** Suporte Integral a Arrastar e Soltar (Drag & Drop):
-  - [ ] Soltar vídeos/músicas/imagens do Windows Explorer diretamente no canvas.
-  - [ ] Soltar arquivos de roteiro (`.txt`, `.md`, `.json`) no nó de roteiro.
+- [X] **6.3** Suporte Integral a Arrastar e Soltar (Drag & Drop):
+  - [X] Soltar vídeos/músicas/imagens do Windows Explorer diretamente no canvas (`FactoryMsg::FilesDropped` em `factory.rs` + `lib.rs`).
+  - [X] Soltar arquivos de roteiro (`.txt`, `.md`) no canvas para importação imediata no nó de roteiro.
 - [X] **6.4** Execução Isolada de Nós:
   - [X] Cada card possui seu próprio botão mini-play para testar e validar o nó individual.
 - [X] **6.5** Controller Rust do painel (`src/panes/factory.rs`):
@@ -204,7 +204,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [X] **7.2** LED embutido em cada `FactoryNodeCard` refletindo estado em tempo real.
 - [X] **7.3** Barras de progresso industriais integradas em cada card de nó e no painel de lote.
 - [X] **7.4** Integração do VU Meter Estéreo (`LevelMeter`) na barra inferior do `factory-pane.slint` (`vu-left`, `vu-right`).
-  - [ ] LEDs de aviso de clipping (+0dB em vermelho) para evitar distorção no áudio final.
+  - [X] LEDs de aviso de clipping (+0dB em vermelho) ao lado do `LevelMeter` no `factory-pane.slint` (`vu >= 0.99 ➔ LedState.Error`).
 
 ---
 
@@ -294,9 +294,9 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [X] **15.1** **Edição Livre no Canvas**:
   - [X] Arrastar e reposicionar qualquer `FactoryNodeCard` no canvas (`node-card.slint` + `factory-pane.slint`).
   - [ ] Conectar e desconectar portas de entrada/saída diretamente com o mouse.
-- [ ] **15.2** **Drag & Drop Nativo do Sistema Operacional**:
-  - [ ] Soltar `.mp4`, `.mp3`, `.wav`, `.png` direto do Windows Explorer sobre um nó para usá-lo como B-Roll, BGM ou amostra de Voice Cloning.
-  - [ ] Soltar `.txt` / `.md` no nó de Roteiro para importação imediata.
+- [X] **15.2** **Drag & Drop Nativo do Sistema Operacional**:
+  - [X] Soltar `.mp4`, `.mp3`, `.wav`, `.png` direto do Windows Explorer no canvas (`FactoryMsg::FilesDropped`) para usá-lo como B-Roll (`custom_broll_paths`) ou BGM (`bgm_track`).
+  - [X] Soltar `.txt` / `.md` para importação imediata do roteiro.
 - [ ] **15.3** **Audition por Cena com Waveform**:
   - [ ] Editor de roteiro cena a cena com forma de onda (`wave.slint`) e preview instantâneo de áudio/vídeo por cena.
 

@@ -279,6 +279,8 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
                         // import into: a dropped project opens, and media
                         // starts one.
                         studio.handle(Msg::Start(StartMsg::Dropped(paths)));
+                    } else if studio.factory.open {
+                        studio.handle(Msg::Factory(panes::factory::FactoryMsg::FilesDropped(paths)));
                     } else if to_library {
                         studio.handle(Msg::Sounds(SoundsMsg::Import(paths)));
                     } else {

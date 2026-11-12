@@ -43,6 +43,8 @@ pub enum FactoryMsg {
     },
     /// End-to-end pipeline run completed.
     PipelineFinished { success: bool, summary: String },
+    /// Files dropped onto the Factory canvas from the OS file manager.
+    FilesDropped(Vec<std::path::PathBuf>),
 }
 
 impl From<FactoryMsg> for Msg {
@@ -192,6 +194,46 @@ impl FactoryPane {
                     log::info!("Factory: pipeline finished — {}", summary);
                 } else {
                     log::error!("Factory: pipeline failed — {}", summary);
+                }
+            }
+            FactoryMsg::FilesDropped(paths) => {
+                for path in paths {
+                    let ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|e| e.to_ascii_lowercase())
+                        .unwrap_or_default();
+                    match ext.as_str() {
+                        "txt" | "md" => {
+                            if let Ok(text) = std::fs::read_to_string(&path)
+                                && !text.trim().is_empty()
+                            {
+                                self.pipeline_config.script.raw_script = text;
+                                self.node_progress.insert("script".to_string(), 1.0);
+                                self.last_status = format!(
+                                    "Roteiro importado: {}",
+                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("script")
+                                );
+                            }
+                        }
+                        "mp3" | "wav" | "ogg" | "flac" | "m4a" => {
+                            self.pipeline_config.sfx.bgm_track = Some(path.clone());
+                            self.node_progress.insert("sfx".to_string(), 1.0);
+                            self.last_status = format!(
+                                "Áudio/BGM importado: {}",
+                                path.file_name().and_then(|n| n.to_str()).unwrap_or("audio")
+                            );
+                        }
+                        "mp4" | "mov" | "mkv" | "webm" | "png" | "jpg" | "jpeg" => {
+                            self.pipeline_config.media.custom_broll_paths.push(path.clone());
+                            self.node_progress.insert("media".to_string(), 1.0);
+                            self.last_status = format!(
+                                "B-Roll adicionado ({} arquivos)",
+                                self.pipeline_config.media.custom_broll_paths.len()
+                            );
+                        }
+                        _ => {}
+                    }
                 }
             }
         }

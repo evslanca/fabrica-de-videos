@@ -137,16 +137,20 @@ pub fn run_pipeline(
     let mut cut_times = Vec::new();
 
     for (idx, seg) in cfg.script.scenes.iter().enumerate() {
-        let clip_path = downloaded_paths
-            .get(idx)
-            .and_then(|res| res.as_ref().ok())
-            .cloned()
-            .or_else(|| {
-                selected_items
-                    .get(idx)
-                    .map(|c| PathBuf::from(&c.download_url))
-            })
-            .unwrap_or_else(|| PathBuf::from("assets/vault/dark_default.mp4"));
+        let clip_path = if !cfg.media.custom_broll_paths.is_empty() {
+            cfg.media.custom_broll_paths[idx % cfg.media.custom_broll_paths.len()].clone()
+        } else {
+            downloaded_paths
+                .get(idx)
+                .and_then(|res| res.as_ref().ok())
+                .cloned()
+                .or_else(|| {
+                    selected_items
+                        .get(idx)
+                        .map(|c| PathBuf::from(&c.download_url))
+                })
+                .unwrap_or_else(|| PathBuf::from("assets/vault/dark_default.mp4"))
+        };
 
         if idx > 0 {
             cut_times.push(cursor);
@@ -253,6 +257,36 @@ pub fn run_pipeline(
         anti_reused_filters: AntiReusedFilterParams::default(),
         exported_mp4,
     })
+}
+
+/// Benchmarks timeline assembly + `to_concat_document()` conversion for `scene_count` scenes (~60s at 5s/scene).
+pub fn benchmark_pipeline_assembly(scene_count: usize) -> std::time::Duration {
+    let start = std::time::Instant::now();
+    let scenes: Vec<AssembledScene> = (0..scene_count)
+        .map(|i| AssembledScene {
+            index: i,
+            start_seconds: i as f32 * 5.0,
+            duration_seconds: 5.0,
+            video_path: PathBuf::from("assets/vault/dark_smoke.mp4"),
+            audio_path: if i == 0 {
+                Some(PathBuf::from("audio/narration.wav"))
+            } else {
+                None
+            },
+            mirror_horizontal: i % 2 == 1,
+            ken_burns_motion: "zoom_in_center".to_string(),
+        })
+        .collect();
+    let assembled = AssembledProject::assemble(
+        scenes,
+        Some(PathBuf::from("audio/bgm.wav")),
+        Vec::new(),
+        1920,
+        1080,
+        &DuckingParams::default(),
+    );
+    let _doc = assembled.to_concat_document();
+    start.elapsed()
 }
 
 #[cfg(test)]
