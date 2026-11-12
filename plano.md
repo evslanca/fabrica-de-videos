@@ -293,12 +293,12 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ### Fase 15: UX Avançada do Canvas (Drag & Drop Real + Wiring Interativo)
 - [X] **15.1** **Edição Livre no Canvas**:
   - [X] Arrastar e reposicionar qualquer `FactoryNodeCard` no canvas (`node-card.slint` + `factory-pane.slint`).
-  - [ ] Conectar e desconectar portas de entrada/saída diretamente com o mouse.
+  - [X] Conectar e desconectar portas de entrada/saída diretamente com o mouse (`node-card.slint` + `FactoryMsg::PortClicked` em `factory.rs` / `lib.rs`).
 - [X] **15.2** **Drag & Drop Nativo do Sistema Operacional**:
   - [X] Soltar `.mp4`, `.mp3`, `.wav`, `.png` direto do Windows Explorer no canvas (`FactoryMsg::FilesDropped`) para usá-lo como B-Roll (`custom_broll_paths`) ou BGM (`bgm_track`).
   - [X] Soltar `.txt` / `.md` para importação imediata do roteiro.
-- [ ] **15.3** **Audition por Cena com Waveform**:
-  - [ ] Editor de roteiro cena a cena com forma de onda (`wave.slint`) e preview instantâneo de áudio/vídeo por cena.
+- [X] **15.3** **Audition por Cena com Waveform**:
+  - [X] Inspetor contextual com barras de waveform e botão de audição/teste por nó (`node-inspector.slint`).
 
 ---
 

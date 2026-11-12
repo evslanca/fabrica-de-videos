@@ -2264,6 +2264,12 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         factory_ui.on_aspect_changed(on_window!(|state, is_16_9: bool| {
             state.handle(Msg::Factory(panes::factory::FactoryMsg::AspectChanged(is_16_9)));
         }));
+        factory_ui.on_port_clicked(on_window!(|state, node_id: SharedString, is_output: bool| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::PortClicked {
+                node_id: node_id.to_string(),
+                is_output,
+            }));
+        }));
     }
 
     // ── settings ──

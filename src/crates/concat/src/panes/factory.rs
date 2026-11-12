@@ -45,6 +45,8 @@ pub enum FactoryMsg {
     PipelineFinished { success: bool, summary: String },
     /// Files dropped onto the Factory canvas from the OS file manager.
     FilesDropped(Vec<std::path::PathBuf>),
+    /// User clicked an input or output port on a node card to connect/disconnect wires.
+    PortClicked { node_id: String, is_output: bool },
 }
 
 impl From<FactoryMsg> for Msg {
@@ -71,6 +73,10 @@ pub struct FactoryPane {
     pub last_status: String,
     /// Current pipeline configuration.
     pub pipeline_config: FactoryPipelineConfig,
+    /// Source node ID awaiting target input port click for interactive wiring.
+    pub pending_wire_from: Option<String>,
+    /// Active custom `(from, to)` port connections toggled by the user.
+    pub custom_wires: Vec<(String, String)>,
 }
 
 impl Default for FactoryPane {
@@ -84,6 +90,8 @@ impl Default for FactoryPane {
             node_progress: HashMap::new(),
             last_status: String::new(),
             pipeline_config: FactoryPipelineConfig::default(),
+            pending_wire_from: None,
+            custom_wires: Vec::new(),
         }
     }
 }
@@ -245,6 +253,23 @@ impl FactoryPane {
                             );
                         }
                         _ => {}
+                    }
+                }
+            }
+            FactoryMsg::PortClicked { node_id, is_output } => {
+                if is_output {
+                    self.pending_wire_from = Some(node_id.clone());
+                    self.last_status = format!("Conectando saída de '{node_id}' — clique em uma porta de entrada");
+                } else if let Some(from) = self.pending_wire_from.take() {
+                    if from != node_id {
+                        let pair = (from.clone(), node_id.clone());
+                        if let Some(pos) = self.custom_wires.iter().position(|w| w == &pair) {
+                            self.custom_wires.remove(pos);
+                            self.last_status = format!("Conexão removida: {from} ✕ {node_id}");
+                        } else {
+                            self.custom_wires.push(pair);
+                            self.last_status = format!("Conectado: {from} ➔ {node_id}");
+                        }
                     }
                 }
             }

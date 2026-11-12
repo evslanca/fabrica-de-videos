@@ -74,6 +74,7 @@ export global FactoryData {
     callback start-batch();
     callback stop-batch();
     callback test-node(string);
+    callback port-clicked(string, bool);    // node-id, is-output
 }
 
 export component FactoryPane {
@@ -128,8 +129,10 @@ export component FactoryPane {
                 progress: node.progress;
                 selected: FactoryData.selected-node-id == node.id;
 
-                run-pressed  => { FactoryData.test-node(node.id); }
-                card-clicked => { FactoryData.node-selected(node.id, node.id); }
+                run-pressed         => { FactoryData.test-node(node.id); }
+                card-clicked        => { FactoryData.node-selected(node.id, node.id); }
+                input-port-clicked  => { FactoryData.port-clicked(node.id, false); }
+                output-port-clicked => { FactoryData.port-clicked(node.id, true); }
                 moved(dx, dy) => {
                     FactoryData.nodes[idx].pos-x = node.pos-x + dx / root.zoom;
                     FactoryData.nodes[idx].pos-y = node.pos-y + dy / root.zoom;

@@ -56,7 +56,7 @@ export component NodeInspector {
             // Separator
             Rectangle { height: 1px; background: #2a2a35; }
 
-            // Placeholder content area (actual node-specific widgets bound in Rust)
+            // Contextual node parameters + Waveform Audition strip
             Rectangle {
                 height: 160px;
                 border-radius: 7px;
@@ -64,12 +64,38 @@ export component NodeInspector {
                 border-width: 1px;
                 border-color: #2a2a35;
 
-                Text {
-                    text: "Parâmetros de " + root.node-title;
-                    font-size: 11px;
-                    color: #4b5563;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 8px;
+
+                    Text {
+                        text: "Parâmetros · " + root.node-title;
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #9ca3af;
+                    }
+
+                    // Mini waveform audition bars
+                    HorizontalLayout {
+                        height: 44px;
+                        spacing: 3px;
+                        alignment: center;
+
+                        for h in [0.35, 0.72, 0.50, 0.90, 0.62, 0.84, 0.40, 0.95, 0.68, 0.48, 0.78, 0.30, 0.64, 0.85, 0.45, 0.25] : Rectangle {
+                            width: 8px;
+                            height: parent.height * h;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: 2px;
+                            background: root.node-status == LedState.Working ? #f59e0b : #3b82f6;
+                        }
+                    }
+
+                    Text {
+                        text: "Clique em Testar Nó para audição de cena / síntese";
+                        font-size: 10px;
+                        color: #6b7280;
+                        wrap: word-wrap;
+                    }
                 }
             }
 

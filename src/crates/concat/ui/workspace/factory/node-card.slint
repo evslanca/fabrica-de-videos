@@ -21,6 +21,8 @@ export component FactoryNodeCard {
     callback run-pressed();
     callback card-clicked();
     callback moved(length, length); // delta-x, delta-y
+    callback input-port-clicked();
+    callback output-port-clicked();
 
     width: 220px;
     min-height: 90px;
@@ -126,6 +128,38 @@ export component FactoryNodeCard {
                     }
                 }
                 clicked => { root.card-clicked(); }
+            }
+        }
+
+        // Input port (left edge)
+        Rectangle {
+            x: -6px;
+            y: parent.height / 2 - 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+            background: #1e293b;
+            border-width: 2px;
+            border-color: #3b82f6;
+
+            TouchArea {
+                clicked => { root.input-port-clicked(); }
+            }
+        }
+
+        // Output port (right edge)
+        Rectangle {
+            x: parent.width - 6px;
+            y: parent.height / 2 - 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+            background: #1e293b;
+            border-width: 2px;
+            border-color: #22c55e;
+
+            TouchArea {
+                clicked => { root.output-port-clicked(); }
             }
         }
     }

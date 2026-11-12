@@ -122,6 +122,38 @@ pub fn build_multilang_batch_jobs(
         .collect()
 }
 
+/// Execution plan for automated video dubbing (`1 Video -> N Languages`)
+/// coordinating vocal/instrumental isolation, Whisper transcription, and TTS alignment.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DubbingPipelinePlan {
+    /// Original source video/audio path.
+    pub source_media: PathBuf,
+    /// Target dubbing language.
+    pub target_language: TargetLanguage,
+    /// Separated vocal stem path (for Whisper transcription & voice cloning reference).
+    pub vocals_stem_path: PathBuf,
+    /// Separated instrumental/BGM stem path (preserved in final mix).
+    pub instrumental_stem_path: PathBuf,
+    /// Output dubbed speech audio path.
+    pub dubbed_voice_path: PathBuf,
+}
+
+/// Builds a [`DubbingPipelinePlan`] under `work_dir` for the given source media and language.
+pub fn prepare_dubbing_plan(
+    source_media: &std::path::Path,
+    target_language: TargetLanguage,
+    work_dir: &std::path::Path,
+) -> DubbingPipelinePlan {
+    let lang_dir = work_dir.join(target_language.code().to_lowercase());
+    DubbingPipelinePlan {
+        source_media: source_media.to_path_buf(),
+        target_language,
+        vocals_stem_path: work_dir.join("stems").join("vocals.wav"),
+        instrumental_stem_path: work_dir.join("stems").join("instrumental.wav"),
+        dubbed_voice_path: lang_dir.join("dubbed_voice.wav"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
