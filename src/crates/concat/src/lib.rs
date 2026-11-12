@@ -2259,6 +2259,9 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         factory_ui.on_stop_batch(on_window!(|state| {
             state.handle(Msg::Factory(panes::factory::FactoryMsg::BatchStop));
         }));
+        factory_ui.on_aspect_changed(on_window!(|state, is_16_9: bool| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::AspectChanged(is_16_9)));
+        }));
     }
 
     // ── settings ──

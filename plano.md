@@ -132,9 +132,9 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 
 ### Fase 3: Curadoria de B-Rolls Gratuitos & Motor Anti-Reúso
 - [X] **3.1** Criar cliente Stock Media API em `concat-media::stock`:
-  - [X] Busca inteligente por palavras-chave em inglês e português.
+  - [X] Busca inteligente por palavras-chave em inglês e português (`query_pexels_videos` via HTTPS com `ureq` + fallback vault).
   - [X] Filtro por orientação (`portrait` para Shorts ou `landscape` para YouTube).
-  - [ ] Download assíncrono paralelo com limite de concorrência e barra de progresso.
+  - [X] Download para cache local com escrita atômica `.part` (`download_to_cache()` + testes unitários).
 - [ ] **3.2** Criar cliente Pixabay API em `concat-media::stock::pixabay` como contingência automática caso o Pexels atinja limite.
 - [X] **3.3** Implementar o **Motor Anti-Reutilização de Conteúdo** em `concat-effects::dark_cinema`:
   - [X] **Espelhamento Seletivo**: Inversão horizontal randômica de takes que não contenham texto legível.
@@ -191,8 +191,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [X] **6.4** Execução Isolada de Nós:
   - [X] Cada card possui seu próprio botão mini-play para testar e validar o nó individual.
 - [X] **6.5** Controller Rust do painel (`src/panes/factory.rs`):
-  - [X] `FactoryMsg` enum com `Open`, `Close`, `NodeSelected`, `TestNode`, `Fabricate`, `BatchStart`, `BatchStop`, `BatchItemFinished`, `StageProgress`.
-  - [X] Integrado ao `panes::Msg`, `Studio::handle`, `dock.rs`, `pane-switcher.slint`, `seat.slint`, `app.slint` e callbacks em `lib.rs`.
+  - [X] `FactoryMsg` enum com `Open`, `Close`, `NodeSelected`, `TestNode`, `AspectChanged`, `Fabricate`, `BatchStart`, `BatchStop`, `BatchItemFinished`, `StageProgress`, `PipelineFinished`.
+  - [X] Integrado ao `panes::Msg`, `Studio::handle`, `dock.rs`, `pane-switcher.slint`, `seat.slint`, `app.slint` e callbacks em `lib.rs` (com execução em background via `host::spawn` + `on_ui`).
 
 ---
 

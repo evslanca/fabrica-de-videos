@@ -3,9 +3,12 @@
 
 //! Free Stock Media Provider (Pexels, Pixabay, Local Vault).
 //!
-//! Handles querying free video clips and photos for scene B-Rolls,
-//! with aspect ratio filtering (16:9 Landscape vs 9:16 Portrait) and local disk caching.
+//! Queries free HD/4K video clips for scene B-Rolls via Pexels API (when a key
+//! is provided) or falls back cleanly to the curated local Dark Vault, with
+//! aspect ratio filtering (`landscape` 16:9 vs `portrait` 9:16) and disk caching.
 
+use std::fs::{self, File};
+use std::io;
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
@@ -47,16 +50,39 @@ impl Default for StockSearchRequest {
     }
 }
 
+#[derive(Deserialize)]
+struct PexelsVideoResponse {
+    #[serde(default)]
+    videos: Vec<PexelsVideo>,
+}
+
+#[derive(Deserialize)]
+struct PexelsVideo {
+    id: u64,
+    duration: Option<f32>,
+    user: Option<PexelsUser>,
+    #[serde(default)]
+    video_files: Vec<PexelsVideoFile>,
+}
+
+#[derive(Deserialize)]
+struct PexelsUser {
+    name: String,
+}
+
+#[derive(Deserialize)]
+struct PexelsVideoFile {
+    link: String,
+    width: Option<u32>,
+    height: Option<u32>,
+    quality: Option<String>,
+}
+
 /// Curated free stock media client.
+#[derive(Default)]
 pub struct StockClient {
     /// Optional Pexels API key. If empty, local vault / curated collections are prioritized.
     pub pexels_key: Option<String>,
-}
-
-impl Default for StockClient {
-    fn default() -> Self {
-        Self { pexels_key: None }
-    }
 }
 
 impl StockClient {
@@ -66,14 +92,28 @@ impl StockClient {
     }
 
     /// Searches for stock video footage matching query and aspect ratio.
+    /// Queries Pexels over HTTPS when `pexels_key` is configured, falling back
+    /// to curated dark vault presets on offline/no-key setups.
     pub fn search_videos(&self, request: &StockSearchRequest) -> Vec<StockMediaItem> {
-        log::info!("Searching stock video footage for: '{}' ({})", request.query, request.orientation);
+        log::info!(
+            "Searching stock video footage for: '{}' ({})",
+            request.query,
+            request.orientation
+        );
 
-        // Fallback curated dark B-Roll presets if no API key is provided
+        if let Some(key) = self.pexels_key.as_deref().filter(|k| !k.trim().is_empty()) {
+            match self.query_pexels_videos(key, request) {
+                Ok(items) if !items.is_empty() => return items,
+                Ok(_) => log::warn!("Pexels returned 0 videos for '{}', using vault", request.query),
+                Err(e) => log::warn!("Pexels API request failed ({}), using vault", e),
+            }
+        }
+
+        // Fallback curated dark B-Roll presets
         vec![
             StockMediaItem {
                 id: "stock_dark_01".to_string(),
-                download_url: "https://example.com/vault/dark_smoke.mp4".to_string(),
+                download_url: "assets/vault/dark_smoke.mp4".to_string(),
                 width: if request.orientation == "portrait" { 1080 } else { 1920 },
                 height: if request.orientation == "portrait" { 1920 } else { 1080 },
                 duration_seconds: 6.5,
@@ -81,12 +121,117 @@ impl StockClient {
             },
             StockMediaItem {
                 id: "stock_dark_02".to_string(),
-                download_url: "https://example.com/vault/shadow_figure.mp4".to_string(),
+                download_url: "assets/vault/shadow_figure.mp4".to_string(),
                 width: if request.orientation == "portrait" { 1080 } else { 1920 },
                 height: if request.orientation == "portrait" { 1920 } else { 1080 },
                 duration_seconds: 5.0,
                 author: "Creative Commons Dark Vault".to_string(),
             },
         ]
+    }
+
+    fn query_pexels_videos(
+        &self,
+        api_key: &str,
+        request: &StockSearchRequest,
+    ) -> Result<Vec<StockMediaItem>, String> {
+        let resp = ureq::get("https://api.pexels.com/videos/search")
+            .set("Authorization", api_key)
+            .query("query", &request.query)
+            .query("orientation", &request.orientation)
+            .query("per_page", &request.per_page.to_string())
+            .call()
+            .map_err(|e| e.to_string())?;
+
+        let parsed: PexelsVideoResponse = resp
+            .into_json()
+            .map_err(|e| format!("invalid JSON from Pexels: {e}"))?;
+
+        Ok(parse_pexels_response(parsed))
+    }
+
+    /// Downloads a remote stock media item into `cache_dir` (atomic `.part` write).
+    /// Returns the local cached file path if it already exists.
+    pub fn download_to_cache(item: &StockMediaItem, cache_dir: &Path) -> io::Result<PathBuf> {
+        fs::create_dir_all(cache_dir)?;
+        let target = cache_dir.join(format!("{}.mp4", item.id));
+        if target.exists() {
+            return Ok(target);
+        }
+
+        if !item.download_url.starts_with("http") {
+            return Ok(PathBuf::from(&item.download_url));
+        }
+
+        let part = cache_dir.join(format!("{}.mp4.part", item.id));
+        let resp = ureq::get(&item.download_url)
+            .call()
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
+        let mut reader = resp.into_reader();
+        let mut out = File::create(&part)?;
+        io::copy(&mut reader, &mut out)?;
+        fs::rename(&part, &target)?;
+        Ok(target)
+    }
+}
+
+fn parse_pexels_response(parsed: PexelsVideoResponse) -> Vec<StockMediaItem> {
+    parsed
+        .videos
+        .into_iter()
+        .filter_map(|v| {
+            let best = v
+                .video_files
+                .iter()
+                .find(|f| f.quality.as_deref() == Some("hd"))
+                .or_else(|| v.video_files.first())?;
+            Some(StockMediaItem {
+                id: format!("pexels_{}", v.id),
+                download_url: best.link.clone(),
+                width: best.width.unwrap_or(1920),
+                height: best.height.unwrap_or(1080),
+                duration_seconds: v.duration.unwrap_or(5.0),
+                author: v.user.map(|u| u.name).unwrap_or_else(|| "Pexels".into()),
+            })
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_pexels_json_picking_hd_file() {
+        let json = r#"{
+            "videos": [{
+                "id": 42,
+                "duration": 7.5,
+                "user": { "name": "DarkCreator" },
+                "video_files": [
+                    { "link": "https://cdn/sd.mp4", "width": 640, "height": 360, "quality": "sd" },
+                    { "link": "https://cdn/hd.mp4", "width": 1920, "height": 1080, "quality": "hd" }
+                ]
+            }]
+        }"#;
+        let parsed: PexelsVideoResponse = serde_json::from_str(json).unwrap();
+        let items = parse_pexels_response(parsed);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].id, "pexels_42");
+        assert_eq!(items[0].download_url, "https://cdn/hd.mp4");
+        assert_eq!(items[0].width, 1920);
+    }
+
+    #[test]
+    fn offline_fallback_respects_orientation() {
+        let client = StockClient::default();
+        let items = client.search_videos(&StockSearchRequest {
+            orientation: "portrait".to_string(),
+            ..Default::default()
+        });
+        assert!(!items.is_empty());
+        assert_eq!(items[0].width, 1080);
+        assert_eq!(items[0].height, 1920);
     }
 }
