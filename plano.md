@@ -280,7 +280,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] `VoiceFxPreset`: *StudioBroadcast*, *CavernousReverb*, *VintageRadio*, *DarkPitchDown*, *SpectralEcho*, *AnalogSaturation*.
 - [X] **14.2** **Visual FX Effects & Color Grading (`concat-effects::dark_cinema`)**:
   - [X] `VisualFxPreset` (*ChromaticGlitch*, *VhsScanlines*, *DustAndAsh*, *BeatZoomPulse*, *NoirFlicker*) e `ColorGradeLut` (*NoirHighContrast*, *TealAndOrange*, *HorrorDesaturated*, *GoldenStoic*).
-  - [ ] Shaders WGPU executando cada preset no compositor de frames.
+  - [X] Gerador de shaders WGSL (`wgsl_dark_fx_shader`) + processamento CPU RGBA (`apply_color_grade_rgba` / `apply_vignette_and_grain_rgba`).
+  - [ ] Bindings de runtime WGPU executando cada shader diretamente no compositor de frames.
 - [X] **14.3** **Implementação Real de Rede & Exportação Final**:
   - [X] Protocolo Edge Speech (`concat-speech::edge_tts`): builders `speech.config` / `ssml`, parser de frames binários MP3 e `WordBoundary` (`100ns -> ms`).
   - [X] Transporte WebSocket TLS (`tungstenite` + `rustls-tls-webpki-roots`) conectando ao endpoint `wss://speech.platform.bing.com/...` em tempo real com fallback offline automático.
@@ -309,6 +310,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Nó `"music"` integrado ao `FactoryGraph::default_dark_pipeline()` e ao canvas `factory-pane.slint`.
 - [X] **16.2** **Motor Local ONNX & Provedores Opcionais de Música**:
   - [X] Enum `MusicEngine` definido (`LocalOnnx`, `SunoApi`, `ElevenLabsMusic`).
+  - [X] Fallback procedural de BGM dark em WAV 44.1kHz (`MusicNodeConfig::synthesize_ambient_wav`) integrado ao `run_pipeline` quando `bgm_track` não é fornecido.
   - [ ] Execução de inferência ONNX real para MusicGen / ACE-Step no `concat-host::models`.
 - [X] **16.3** **Extração de Stems & Sincronia de Batida (Beat Sync)**:
   - [X] `MusicNodeConfig::beat_timestamps()` calculando timecodes exatos de batida por BPM (com testes unitários).

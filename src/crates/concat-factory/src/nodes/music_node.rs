@@ -8,7 +8,9 @@
 //! Supports 100% local ONNX inference (MusicGen / ACE-Step) as primary engine,
 //! with optional external API fallback (Suno / Udio / ElevenLabs Music).
 
-use std::path::PathBuf;
+use std::fs::{self, File};
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 /// Whether the generated music contains vocals or is purely instrumental.
@@ -118,6 +120,69 @@ impl MusicNodeConfig {
         }
         beats
     }
+
+    /// Synthesizes a procedural 44.1 kHz 16-bit mono dark atmospheric BGM `.wav`
+    /// matching [`Self::genre`], [`Self::bpm`], and [`Self::duration_seconds`] as a
+    /// zero-cost local fallback when ONNX MusicGen weights are not installed.
+    pub fn synthesize_ambient_wav(&self, output_path: &Path) -> io::Result<PathBuf> {
+        if output_path.exists() {
+            return Ok(output_path.to_path_buf());
+        }
+        if let Some(parent) = output_path.parent()
+            && !parent.as_os_str().is_empty()
+        {
+            fs::create_dir_all(parent)?;
+        }
+
+        let sample_rate = 44_100u32;
+        let samples = self.synthesize_ambient_samples(sample_rate);
+        let data_len = (samples.len() * 2) as u32;
+        let file_len = 36 + data_len;
+        let mut f = File::create(output_path)?;
+        f.write_all(b"RIFF")?;
+        f.write_all(&file_len.to_le_bytes())?;
+        f.write_all(b"WAVEfmt ")?;
+        f.write_all(&16u32.to_le_bytes())?;
+        f.write_all(&1u16.to_le_bytes())?;
+        f.write_all(&1u16.to_le_bytes())?;
+        f.write_all(&sample_rate.to_le_bytes())?;
+        f.write_all(&(sample_rate * 2).to_le_bytes())?;
+        f.write_all(&2u16.to_le_bytes())?;
+        f.write_all(&16u16.to_le_bytes())?;
+        f.write_all(b"data")?;
+        f.write_all(&data_len.to_le_bytes())?;
+
+        for pcm in samples {
+            f.write_all(&pcm.to_le_bytes())?;
+        }
+        Ok(output_path.to_path_buf())
+    }
+
+    /// Generates mono 16-bit PCM samples for the procedural dark ambient BGM bed.
+    pub fn synthesize_ambient_samples(&self, sample_rate: u32) -> Vec<i16> {
+        let duration = self.duration_seconds.clamp(1.0, 600.0);
+        let num_samples = (sample_rate as f32 * duration) as usize;
+        let beat_hz = (self.bpm.clamp(40, 220) as f32) / 60.0;
+        let base_freq = match self.genre {
+            MusicGenre::DarkAmbient | MusicGenre::HorrorDrone => 55.0,
+            MusicGenre::Phonk => 65.4,
+            MusicGenre::EpicCinematic => 73.4,
+            MusicGenre::LoFiMystery => 82.4,
+            MusicGenre::SynthwaveNoir => 61.7,
+        };
+
+        let two_pi = 2.0 * std::f32::consts::PI;
+        let mut out = Vec::with_capacity(num_samples);
+        for i in 0..num_samples {
+            let t = i as f32 / sample_rate as f32;
+            let pulse = 0.65 + 0.35 * (two_pi * beat_hz * t).sin();
+            let sub = (two_pi * base_freq * t).sin() * 0.55;
+            let fifth = (two_pi * (base_freq * 1.5) * t).sin() * 0.25;
+            let sample = (sub + fifth) * pulse * 0.35;
+            out.push((sample.clamp(-0.95, 0.95) * i16::MAX as f32) as i16);
+        }
+        out
+    }
 }
 
 #[cfg(test)]
@@ -147,5 +212,18 @@ mod tests {
         };
         assert_eq!(cfg.mode, MusicMode::VocalWithLyrics);
         assert!(!cfg.lyrics.is_empty());
+    }
+
+    #[test]
+    fn synthesizes_ambient_bgm_samples_with_non_zero_energy() {
+        let cfg = MusicNodeConfig {
+            genre: MusicGenre::HorrorDrone,
+            bpm: 90,
+            duration_seconds: 2.0,
+            ..Default::default()
+        };
+        let samples = cfg.synthesize_ambient_samples(44_100);
+        assert_eq!(samples.len(), 88_200);
+        assert!(samples.iter().any(|&s| s.abs() > 100));
     }
 }

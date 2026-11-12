@@ -22,6 +22,7 @@ use thiserror::Error;
 use crate::nodes::caption_node::CaptionNodeConfig;
 use crate::nodes::export_node::ExportNodeConfig;
 use crate::nodes::media_node::MediaNodeConfig;
+use crate::nodes::music_node::MusicNodeConfig;
 use crate::nodes::script_node::ScriptNodeConfig;
 use crate::nodes::sfx_node::SfxNodeConfig;
 use crate::nodes::voice_node::VoiceNodeConfig;
@@ -54,6 +55,9 @@ pub struct FactoryPipelineConfig {
     pub media: MediaNodeConfig,
     /// SFX & BGM ducking configuration.
     pub sfx: SfxNodeConfig,
+    /// Procedural / AI music generation configuration.
+    #[serde(default)]
+    pub music: MusicNodeConfig,
     /// Dynamic caption configuration.
     pub caption: CaptionNodeConfig,
     /// Export resolution and target folder.
@@ -212,11 +216,20 @@ pub fn run_pipeline(
     );
     on_progress("caption", 1.0, "Legendas sincronizadas");
 
-    // Stage 6: Timeline Assembly
+    // Stage 6: Timeline Assembly (auto-synthesize dark BGM if none provided)
     on_progress("export", 0.4, "Montando timeline final...");
+    let bgm_path = match cfg.sfx.bgm_track.clone() {
+        Some(path) => Some(path),
+        None => {
+            let mut music_cfg = cfg.music.clone();
+            music_cfg.duration_seconds = cursor.max(5.0);
+            let bgm_out = audio_dir.join(format!("{}_bgm.wav", cfg.export.project_name));
+            music_cfg.synthesize_ambient_wav(&bgm_out).ok()
+        }
+    };
     let assembled = AssembledProject::assemble(
         assembled_scenes,
-        cfg.sfx.bgm_track.clone(),
+        bgm_path,
         caption_bursts,
         cfg.export.aspect.width(),
         cfg.export.aspect.height(),
