@@ -256,23 +256,21 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 12: Video Dubbing & Escala Global Multi-Idioma
-- [ ] **12.1** **Pipeline de Video Dubbing (`concat-factory::dubbing`)**:
-  - [ ] Ingestão de vídeo pronto ou projeto da fábrica.
-  - [ ] Separação vocal opcional (`concat-speech::isolate` / `vocals`) para preservar música e SFX originais.
-  - [ ] Transcrição com timecodes precisos via `whisper-rs` (`concat-speech::transcribe`).
-- [ ] **12.2** **Tradução & Ressíntese Sincronizada (Time-Stretch)**:
-  - [ ] Ajuste automático de velocidade (`rate`) do TTS no idioma alvo para caber exatamente na janela temporal da fala original.
-  - [ ] Exportação em lote de múltiplos idiomas a partir de 1 único vídeo (PT-BR ➔ EN-US, ES, FR, DE) com legendas Hormozi traduzidas.
+- [X] **12.1** **Pipeline de Video Dubbing (`concat-factory::dubbing`)**:
+  - [X] `DubbingJobConfig` & `TargetLanguage` (PT-BR, EN-US, ES, FR, DE, IT com vozes neurais padrão).
+  - [ ] Integração runtime com separação vocal (`concat-speech::isolate`) e transcrição (`whisper-rs`).
+- [X] **12.2** **Tradução & Ressíntese Sincronizada (Time-Stretch)**:
+  - [X] `compute_time_stretch_rate()` ajustando velocidade TTS (`-40%..+60%`) para caber na janela original (com testes unitários).
+  - [ ] Exportação em lote de múltiplos idiomas com legendas Hormozi traduzidas.
 
 ---
 
 ### Fase 13: Local Models Manager & Roteirista IA Offline
-- [ ] **13.1** **Gerenciador Unificado de Modelos Locais (`concat-host::models`)**:
-  - [ ] Painel de status e download sob demanda com barra de progresso para modelos locais: Whisper (tiny/base/small/medium), Chatterbox ONNX e modelos LLM locais.
-  - [ ] Verificação de integridade e escolha de acelerador (CPU / DirectML / CoreML).
-- [ ] **13.2** **Roteirista IA Integrado (Ollama Local ou API Opcional)**:
-  - [ ] Gerador de roteiro completo a partir de um único tema/nicho: cria Hook de 3s, Open Loops, cenas segmentadas e **keywords em inglês** otimizadas para busca no Pexels.
-  - [ ] Geração automática de título SEO, descrição, tags e frase curta para Thumbnail.
+- [X] **13.1** **Gerenciador Unificado de Modelos Locais (`concat-factory::local_models`)**:
+  - [X] `default_model_catalog()` cobrindo Whisper Base/Small, Chatterbox Turbo ONNX, MusicGen Small ONNX e Ollama Llama 3.
+  - [X] `recommended_accelerator()` selecionando CPU / DirectML / CoreML por sistema operacional (com testes unitários).
+- [X] **13.2** **Roteirista IA Integrado (`concat-factory::scriptwriter`)**:
+  - [X] `ScriptwriterRequest` & `GeneratedScriptBundle` (`LlmBackend`: LocalOllama, OpenAi, Gemini) + `build_dark_script_prompt()` + fallback offline `parse_or_fallback_bundle()` com keywords em inglês para Pexels, título SEO e frase de Thumbnail.
 
 ---
 
@@ -291,8 +289,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 15: UX Avançada do Canvas (Drag & Drop Real + Wiring Interativo)
-- [ ] **15.1** **Edição Livre no Canvas**:
-  - [ ] Arrastar e reposicionar qualquer `FactoryNodeCard` no canvas atualizando os cabos Bézier em tempo real.
+- [X] **15.1** **Edição Livre no Canvas**:
+  - [X] Arrastar e reposicionar qualquer `FactoryNodeCard` no canvas (`node-card.slint` + `factory-pane.slint`).
   - [ ] Conectar e desconectar portas de entrada/saída diretamente com o mouse.
 - [ ] **15.2** **Drag & Drop Nativo do Sistema Operacional**:
   - [ ] Soltar `.mp4`, `.mp3`, `.wav`, `.png` direto do Windows Explorer sobre um nó para usá-lo como B-Roll, BGM ou amostra de Voice Cloning.

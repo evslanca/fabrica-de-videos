@@ -20,6 +20,7 @@ export component FactoryNodeCard {
 
     callback run-pressed();
     callback card-clicked();
+    callback moved(length, length); // delta-x, delta-y
 
     width: 220px;
     min-height: 90px;
@@ -111,6 +112,19 @@ export component FactoryNodeCard {
             }
 
             TouchArea {
+                property <length> press-x;
+                property <length> press-y;
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down) {
+                        press-x = self.mouse-x;
+                        press-y = self.mouse-y;
+                    }
+                }
+                moved => {
+                    if (self.pressed) {
+                        root.moved(self.mouse-x - press-x, self.mouse-y - press-y);
+                    }
+                }
                 clicked => { root.card-clicked(); }
             }
         }

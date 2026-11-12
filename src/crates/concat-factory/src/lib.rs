@@ -8,10 +8,13 @@
 //! Procedural SFX, Synchronized Captions, Anti-Reused Content Effects, and Timeline Assembly).
 
 pub mod batch;
+pub mod dubbing;
 pub mod graph;
+pub mod local_models;
 pub mod nodes;
 pub mod pipeline;
 pub mod retention;
+pub mod scriptwriter;
 pub mod thumbnail;
 
 use serde::{Deserialize, Serialize};

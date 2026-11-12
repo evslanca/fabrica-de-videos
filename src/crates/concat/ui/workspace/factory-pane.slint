@@ -118,8 +118,8 @@ export component FactoryPane {
                 zoom: root.zoom;
             }
 
-            // NODE CARDS (positioned on canvas with pan & zoom)
-            for node in FactoryData.nodes : FactoryNodeCard {
+            // NODE CARDS (positioned on canvas with pan & zoom + drag)
+            for node[idx] in FactoryData.nodes : FactoryNodeCard {
                 x: node.pos-x * root.zoom + root.pan-x;
                 y: node.pos-y * root.zoom + root.pan-y;
                 title: node.title;
@@ -130,6 +130,10 @@ export component FactoryPane {
 
                 run-pressed  => { FactoryData.test-node(node.id); }
                 card-clicked => { FactoryData.node-selected(node.id, node.id); }
+                moved(dx, dy) => {
+                    FactoryData.nodes[idx].pos-x = node.pos-x + dx / root.zoom;
+                    FactoryData.nodes[idx].pos-y = node.pos-y + dy / root.zoom;
+                }
             }
 
             // ── Top-right zoom controls ────────────────────────────────────
