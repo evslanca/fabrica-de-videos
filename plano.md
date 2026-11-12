@@ -100,8 +100,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ## 📋 Checklist de Execução Industrial
 
 ### Fase 1: Fundação do Crate `concat-factory` & Grafo de Execução
-- [X] **1.1** Criar o crate `concat-factory` em `src/crates/concat-factory` e vincular no workspace `src/Cargo.toml`.
-- [X] **1.2** Implementar o motor de grafo DAG (`graph.rs`):
+- [X] **1.1** Validar e configurar toolchain Rust e repositório Git (`https://github.com/evslanca/fabrica-de-videos`).
+- [X] **1.2** Criar o crate `concat-factory` em `src/crates/concat-factory` e vincular no workspace `src/Cargo.toml`.
   - [X] Nós (`FactoryNode`) com inputs e outputs tipados fortemente (`PortData`, `PortId`).
   - [X] Arestas de conexão (`Connection`) com validação de tipos de dados.
   - [X] Grafo acíclico executável (`FactoryGraph`).
