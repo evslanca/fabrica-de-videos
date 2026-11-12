@@ -38,6 +38,43 @@ impl CaptionColor {
     }
 }
 
+/// Visual safe-zone placement for captions so overlays never collide with
+/// YouTube player controls (16:9) or TikTok/Reels/Shorts HUD icons (9:16).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CaptionSafeZone {
+    /// Horizontal normalized offset from frame center (`0.0` = centered).
+    pub offset_x: f64,
+    /// Vertical normalized offset from frame center (positive = down).
+    pub offset_y: f64,
+    /// Maximum caption box width as a fraction of frame width (`0.0..=1.0`).
+    pub max_width_ratio: f64,
+    /// Whether to render a translucent dark backing bar (YouTube 16:9 lower-third).
+    pub background_bar: bool,
+}
+
+impl CaptionSafeZone {
+    /// Computes the recommended safe zone for the given output frame dimensions.
+    pub fn for_dimensions(width: u32, height: u32) -> Self {
+        if height > width {
+            // 9:16 Vertical (Shorts/Reels/TikTok): center-lower third above HUD caption bar.
+            Self {
+                offset_x: 0.0,
+                offset_y: 0.22,
+                max_width_ratio: 0.72,
+                background_bar: false,
+            }
+        } else {
+            // 16:9 Landscape (YouTube): classic lower third with backing bar.
+            Self {
+                offset_x: 0.0,
+                offset_y: 0.36,
+                max_width_ratio: 0.80,
+                background_bar: true,
+            }
+        }
+    }
+}
+
 /// Configuration for the burst builder.
 pub struct BurstConfig {
     /// Maximum words per simultaneous display burst (1–4).

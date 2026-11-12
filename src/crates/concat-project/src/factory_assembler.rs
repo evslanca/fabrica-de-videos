@@ -240,7 +240,11 @@ impl AssembledProject {
             clips.push(Arc::new(bgm_clip));
         }
 
-        // T4: Caption Bursts
+        // T4: Caption Bursts (positioned using aspect-aware Safe Zone)
+        let safe_zone = crate::captions_factory::CaptionSafeZone::for_dimensions(
+            video.width,
+            video.height,
+        );
         for burst in &self.caption_bursts {
             let start = (burst.start_seconds as f64).max(0.0);
             let duration = ((burst.end_seconds - burst.start_seconds) as f64).max(1.0 / 60.0);
@@ -254,6 +258,8 @@ impl AssembledProject {
                 duration,
             );
             clip_seq += 1;
+            t_clip.offset_x = safe_zone.offset_x;
+            t_clip.offset_y = safe_zone.offset_y;
             t_clip.text = Some(TextStyle {
                 content: text,
                 ..TextStyle::default()

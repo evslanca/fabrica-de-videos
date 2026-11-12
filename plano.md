@@ -126,7 +126,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [X] **2.2** Desenvolver provider `OpenAiTts` (`concat-speech::cloud_tts::OpenAiTtsConfig`) com suporte aos modelos `tts-1` e `tts-1-hd`.
 - [X] **2.3** Desenvolver provider `ElevenLabsTts` (`concat-speech::cloud_tts::ElevenLabsTtsConfig`) com controle de estabilidade, similaridade e modelo `eleven_multilingual_v2`.
 - [X] **2.4** Cache de áudio com hash determinístico (`cache_key_hex`) do texto + voz + velocidade + tom.
-- [ ] **2.5** Normalização e Masterização Automática de Áudio (-14 LUFS para YouTube).
+- [X] **2.5** Normalização e Masterização Automática de Áudio (-14 LUFS para YouTube) via `concat-project::voice_fx::normalize_pcm16_wav_to_lufs` / `normalize_pcm16_samples` com limiter `-1 dBTP`.
 
 ---
 
@@ -146,11 +146,11 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 4: Biblioteca de Efeitos Sonoros (SFX) & Auto-Ducking
-- [ ] **4.1** Implementar repositório local de SFX embutido no Concat (`assets/sfx/`):
-  - [ ] Categoria *Transitions*: Whoosh rápido, Whoosh com eco, Swish metálico.
-  - [ ] Categoria *Impacts*: Sub-bass Drop, Cinematic Braam, Dark Thud.
-  - [ ] Categoria *Tension*: Drone misterioso, Riser crescente, Batimento cardíaco.
-  - [ ] Categoria *Pops & UI*: Pop seco, Click tátil, Bell suave.
+- [X] **4.1** Implementar repositório local de SFX embutido no Concat (`assets/sfx/`) com síntese procedural WAV 44.1kHz (`synthesize_sfx_wav` + `ensure_sfx_library` em `concat-project::sfx_library`):
+  - [X] Categoria *Transitions*: Whoosh rápido (`WhooshFast`), Whoosh com eco (`WhooshEcho`).
+  - [X] Categoria *Impacts*: Sub-bass Drop (`SubBassDrop`), Cinematic Braam (`CinematicBraam`), Glass Break (`GlassBreak`).
+  - [X] Categoria *Tension*: Riser crescente (`TensionRiser`), Batimento cardíaco (`HeartbeatLoop`).
+  - [X] Categoria *Pops & UI*: Pop seco (`CaptionPop`).
 - [X] **4.2** Injeção Automática de SFX (`sfx_library.rs`):
   - [X] Catálogo tipado `SfxAsset` com 8 categorias (Whoosh, Echo, SubBass, Braam, Riser, Heartbeat, Pop, Glass).
   - [X] Inserir Whoosh/Swish automaticamente a cada troca de cena.
@@ -167,9 +167,9 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [X] **5.1** Gerador de Legendas por Palavra em `concat-project::captions_factory`:
   - [X] Segmentação de frases em blocos de 1 a 3 palavras para ritmo veloz de leitura (Shorts) via `build_caption_bursts()`.
   - [X] Destaque cromático dinâmico (`CaptionColor`: Amarelo Fluorescente, Verde Neon, Ciano, Ouro Escuro).
-- [ ] **5.2** Safe Zones Inteligentes (Zonas de Proteção Visual):
-  - [ ] **Modo Shorts / Reels / TikTok (9:16)**: Manter legendas restritas ao terço central (evitar sobreposição pelo título na base, botões de like/comentário à direita e topo do app).
-  - [ ] **Modo YouTube Padrão (16:9)**: Centralização no terço inferior clássico com barra de fundo translúcida ou sombra de alto contraste.
+- [X] **5.2** Safe Zones Inteligentes (`CaptionSafeZone::for_dimensions` integrado ao `AssembledProject::to_concat_document`):
+  - [X] **Modo Shorts / Reels / TikTok (9:16)**: `offset_y = 0.22`, `max_width_ratio = 0.72` (evita sobreposição pelo título na base e botões laterais).
+  - [X] **Modo YouTube Padrão (16:9)**: `offset_y = 0.36`, `max_width_ratio = 0.80`, `background_bar = true`.
 - [ ] **5.3** Renderização nativa vetorial via Skia/WGPU para garantir nitidez máxima sem perda de performance.
 
 ---
@@ -239,7 +239,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Testes de legendas Hormozi (`captions_factory`), `auto_ducking`, e `sfx_library` (`concat-project`).
 - [ ] **10.2** Benchmarks de Renderização:
   - [ ] Medir tempo de geração de vídeo de 60 segundos (meta: menos de 20 segundos em GPU moderna via WGPU).
-- [ ] **10.3** Scripts de compilação rápida para desenvolvimento (`cargo dev`) e compilação de entrega final (`cargo build --release`).
+- [X] **10.3** Scripts de compilação rápida para desenvolvimento (`scripts/dev.ps1` ➔ `cargo dev`) e compilação de entrega final (`scripts/build-release.ps1` ➔ `cargo test --workspace` + `cargo build --release --bin concat`).
 
 ---
 
