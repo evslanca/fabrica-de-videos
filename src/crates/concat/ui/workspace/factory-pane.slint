@@ -2,14 +2,15 @@
 // SPDX-FileCopyrightText: 2026 Concat contributors
 
 import { Theme } from "../theme/theme.slint";
-import { StatusLed, LedState } from "../primitives/status-led.slint";
+import { StatusLed, LedState, LevelMeter } from "../primitives/primitives.slint";
 import { FactoryNodeCard } from "./factory/node-card.slint";
 import { BatchQueuePanel, BatchQueueItem } from "./factory/batch-queue.slint";
 import { NodeInspector } from "./factory/node-inspector.slint";
+import { WireLayer, WireConnection } from "./factory/wire-renderer.slint";
 
 // Factory Pane: the visual workflow canvas.
-// Renders a dark dotted-grid infinite canvas with draggable node cards
-// connected by animated bezier wires.
+// Renders a dark dotted-grid infinite canvas with pan/zoom, draggable node cards
+// connected by cubic bezier wires, status LEDs, stereo VU meters, and batch queue.
 
 export struct FactoryNodeRow {
     id: string,
@@ -24,31 +25,57 @@ export struct FactoryNodeRow {
 export global FactoryData {
     // Pipeline nodes to render on the canvas
     in-out property <[FactoryNodeRow]> nodes: [
-        { id: "script",  title: "Roteiro",       subtitle: "Divisão em cenas e hook",          status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 80px  },
-        { id: "voice",   title: "Voz / TTS",      subtitle: "Edge-TTS · pt-BR-AntonioNeural",  status: LedState.Off, progress: 0.0, pos-x: 290px, pos-y: 40px  },
-        { id: "media",   title: "B-Roll",          subtitle: "Pexels · Pixabay · Ken Burns",   status: LedState.Off, progress: 0.0, pos-x: 290px, pos-y: 160px },
-        { id: "sfx",     title: "SFX & Áudio",    subtitle: "Whoosh · Riser · Auto-Ducking",   status: LedState.Off, progress: 0.0, pos-x: 550px, pos-y: 80px  },
-        { id: "caption", title: "Legendas",        subtitle: "Hormozi · Safe Zone · Palavras",  status: LedState.Off, progress: 0.0, pos-x: 550px, pos-y: 200px },
-        { id: "export",  title: "Exportar",        subtitle: "16:9 YouTube · 9:16 Shorts",     status: LedState.Off, progress: 0.0, pos-x: 810px, pos-y: 120px },
+        { id: "script",  title: "Roteiro",       subtitle: "Divisão em cenas e hook",          status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 120px },
+        { id: "voice",   title: "Voz / TTS",     subtitle: "Edge-TTS · pt-BR-AntonioNeural",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 50px  },
+        { id: "media",   title: "B-Roll",        subtitle: "Pexels · Pixabay · Ken Burns",     status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 200px },
+        { id: "sfx",     title: "SFX & Áudio",   subtitle: "Whoosh · Riser · Auto-Ducking",    status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 50px  },
+        { id: "caption", title: "Legendas",      subtitle: "Hormozi · Safe Zone · Palavras",   status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 200px },
+        { id: "export",  title: "Exportar",      subtitle: "16:9 YouTube · 9:16 Shorts",       status: LedState.Off, progress: 0.0, pos-x: 840px, pos-y: 120px },
+    ];
+
+    // Cubic bezier wire connections between node output and input ports
+    in-out property <[WireConnection]> wires: [
+        // script (250, 165) -> voice (300, 95)
+        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 95.0,  active: true  },
+        // script (250, 165) -> media (300, 245)
+        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 245.0, active: true  },
+        // voice (520, 95) -> sfx (570, 95)
+        { start-x: 520.0, start-y: 95.0,  end-x: 570.0, end-y: 95.0,  active: true  },
+        // voice (520, 95) -> caption (570, 245)
+        { start-x: 520.0, start-y: 95.0,  end-x: 570.0, end-y: 245.0, active: false },
+        // media (520, 245) -> export (840, 165)
+        { start-x: 520.0, start-y: 245.0, end-x: 840.0, end-y: 165.0, active: true  },
+        // sfx (790, 95) -> export (840, 165)
+        { start-x: 790.0, start-y: 95.0,  end-x: 840.0, end-y: 165.0, active: false },
+        // caption (790, 245) -> export (840, 165)
+        { start-x: 790.0, start-y: 245.0, end-x: 840.0, end-y: 165.0, active: false },
     ];
 
     in-out property <[BatchQueueItem]> batch-items;
-    in-out property <bool>  batch-running: false;
-    in-out property <int>   batch-completed: 0;
-    in-out property <int>   batch-total: 0;
-    in-out property <string> selected-node-id: "";
-    in-out property <string> selected-node-kind: "";
-    in-out property <string> selected-node-title: "";
+    in-out property <bool>     batch-running: false;
+    in-out property <int>      batch-completed: 0;
+    in-out property <int>      batch-total: 0;
+    in-out property <string>   selected-node-id: "";
+    in-out property <string>   selected-node-kind: "";
+    in-out property <string>   selected-node-title: "";
     in-out property <LedState> selected-node-status: LedState.Off;
+    in-out property <bool>     aspect-16-9: true;
+    in-out property <float>    vu-left: 0.0;
+    in-out property <float>    vu-right: 0.0;
 
     callback fabricate();
     callback node-selected(string, string);  // id, kind
+    callback aspect-changed(bool);           // true = 16:9, false = 9:16
     callback start-batch();
     callback stop-batch();
     callback test-node(string);
 }
 
 export component FactoryPane {
+    property <length> pan-x: 0px;
+    property <length> pan-y: 0px;
+    property <float>  zoom: 1.0;
+
     HorizontalLayout {
         spacing: 0px;
 
@@ -58,18 +85,38 @@ export component FactoryPane {
             background: #0d0d12;
             clip: true;
 
-            // Dot-grid background texture (CSS-style SVG pattern emulation)
-            Rectangle {
-                width: 100%;
-                height: 100%;
-                background: @radial-gradient(circle, #252530 1px, transparent 1px);
-                // Note: pattern repeat handled by GPU tiling in the Concat wgpu compositor
+            // Pan gesture on canvas background
+            TouchArea {
+                property <length> drag-start-x;
+                property <length> drag-start-y;
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down) {
+                        drag-start-x = self.mouse-x - root.pan-x;
+                        drag-start-y = self.mouse-y - root.pan-y;
+                    }
+                }
+                moved => {
+                    if (self.pressed) {
+                        root.pan-x = self.mouse-x - drag-start-x;
+                        root.pan-y = self.mouse-y - drag-start-y;
+                    }
+                }
             }
 
-            // NODE CARDS (positioned on canvas)
+            // CUBIC BEZIER WIRES
+            WireLayer {
+                width: 100%;
+                height: 100%;
+                wires: FactoryData.wires;
+                origin-x: root.pan-x;
+                origin-y: root.pan-y;
+                zoom: root.zoom;
+            }
+
+            // NODE CARDS (positioned on canvas with pan & zoom)
             for node in FactoryData.nodes : FactoryNodeCard {
-                x: node.pos-x;
-                y: node.pos-y;
+                x: node.pos-x * root.zoom + root.pan-x;
+                y: node.pos-y * root.zoom + root.pan-y;
                 title: node.title;
                 subtitle: node.subtitle;
                 status: node.status;
@@ -78,6 +125,51 @@ export component FactoryPane {
 
                 run-pressed  => { FactoryData.test-node(node.id); }
                 card-clicked => { FactoryData.node-selected(node.id, node.id); }
+            }
+
+            // ── Top-right zoom controls ────────────────────────────────────
+            Rectangle {
+                x: parent.width - self.width - 12px;
+                y: 12px;
+                width: 112px;
+                height: 30px;
+                border-radius: 6px;
+                background: #14141b.with-alpha(0.9);
+                border-width: 1px;
+                border-color: #2a2a35;
+
+                HorizontalLayout {
+                    padding: 4px;
+                    spacing: 4px;
+                    alignment: center;
+
+                    Rectangle {
+                        width: 24px; height: 22px; border-radius: 4px; background: #1e1e28;
+                        Text { text: "-"; color: #cbd5e1; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+                        TouchArea { clicked => { root.zoom = Math.max(0.5, root.zoom - 0.1); } }
+                    }
+
+                    Text {
+                        text: Math.round(root.zoom * 100) + "%";
+                        color: #94a3b8;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                        width: 34px;
+                    }
+
+                    Rectangle {
+                        width: 24px; height: 22px; border-radius: 4px; background: #1e1e28;
+                        Text { text: "+"; color: #cbd5e1; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+                        TouchArea { clicked => { root.zoom = Math.min(1.6, root.zoom + 0.1); } }
+                    }
+
+                    Rectangle {
+                        width: 18px; height: 22px; border-radius: 4px; background: #1e1e28;
+                        Text { text: "⟲"; color: #94a3b8; font-size: 10px; horizontal-alignment: center; vertical-alignment: center; }
+                        TouchArea { clicked => { root.zoom = 1.0; root.pan-x = 0px; root.pan-y = 0px; } }
+                    }
+                }
             }
 
             // ── Bottom action bar ─────────────────────────────────────────
@@ -110,35 +202,60 @@ export component FactoryPane {
                         Rectangle {
                             width: 60px; height: 28px;
                             border-radius: 6px;
-                            background: #1d4ed8;
+                            background: FactoryData.aspect-16-9 ? #1d4ed8 : #1a1a1f;
                             border-width: 1px;
-                            border-color: #3b82f6;
+                            border-color: FactoryData.aspect-16-9 ? #3b82f6 : #333340;
 
                             Text {
                                 text: "16:9";
                                 font-size: 11px;
-                                font-weight: 700;
-                                color: #bfdbfe;
+                                font-weight: FactoryData.aspect-16-9 ? 700 : 400;
+                                color: FactoryData.aspect-16-9 ? #bfdbfe : #9ca3af;
                                 horizontal-alignment: center;
                                 vertical-alignment: center;
+                            }
+
+                            TouchArea {
+                                clicked => {
+                                    FactoryData.aspect-16-9 = true;
+                                    FactoryData.aspect-changed(true);
+                                }
                             }
                         }
 
                         Rectangle {
                             width: 60px; height: 28px;
                             border-radius: 6px;
-                            background: #1a1a1f;
+                            background: !FactoryData.aspect-16-9 ? #1d4ed8 : #1a1a1f;
                             border-width: 1px;
-                            border-color: #333340;
+                            border-color: !FactoryData.aspect-16-9 ? #3b82f6 : #333340;
 
                             Text {
                                 text: "9:16";
                                 font-size: 11px;
-                                color: #9ca3af;
+                                font-weight: !FactoryData.aspect-16-9 ? 700 : 400;
+                                color: !FactoryData.aspect-16-9 ? #bfdbfe : #9ca3af;
                                 horizontal-alignment: center;
                                 vertical-alignment: center;
                             }
+
+                            TouchArea {
+                                clicked => {
+                                    FactoryData.aspect-16-9 = false;
+                                    FactoryData.aspect-changed(false);
+                                }
+                            }
                         }
+                    }
+
+                    // Stereo VU meter strip
+                    VerticalLayout {
+                        width: 160px;
+                        alignment: center;
+                        spacing: 3px;
+
+                        LevelMeter { value: FactoryData.vu-left;  thickness: 4px; }
+                        LevelMeter { value: FactoryData.vu-right; thickness: 4px; }
                     }
 
                     // FABRICATE master button

@@ -470,6 +470,11 @@ impl Studio {
                 pane.update(msg, self);
                 self.export = pane;
             }
+            crate::panes::Msg::Factory(msg) => {
+                let mut pane = std::mem::take(&mut self.factory);
+                pane.update(msg);
+                self.factory = pane;
+            }
             crate::panes::Msg::Settings(msg) => {
                 let mut pane = std::mem::take(&mut self.settings);
                 pane.update(msg, self);

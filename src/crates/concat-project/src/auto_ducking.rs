@@ -93,3 +93,29 @@ pub fn build_ducking_keyframes(
 
     kf
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ducking_attenuates_during_voice_and_restores_after() {
+        let params = DuckingParams::default();
+        let keyframes = build_ducking_keyframes(&[(2.0, 5.0)], 10.0, &params);
+
+        // Should start at base gain, drop to ducked gain at 2.0, hold until 5.0, restore after release
+        assert!((keyframes.first().unwrap().gain - params.bgm_base_gain).abs() < 1e-6);
+        assert!(keyframes.iter().any(|k| (k.time_seconds - 2.0).abs() < 1e-6 && (k.gain - params.bgm_ducked_gain).abs() < 1e-6));
+        assert!(keyframes.iter().any(|k| (k.time_seconds - 5.0).abs() < 1e-6 && (k.gain - params.bgm_ducked_gain).abs() < 1e-6));
+        assert!((keyframes.last().unwrap().gain - params.bgm_base_gain).abs() < 1e-6);
+    }
+
+    #[test]
+    fn empty_voice_windows_keeps_base_gain() {
+        let params = DuckingParams::default();
+        let keyframes = build_ducking_keyframes(&[], 8.0, &params);
+        assert_eq!(keyframes.len(), 2);
+        assert!((keyframes[0].gain - params.bgm_base_gain).abs() < 1e-6);
+        assert!((keyframes[1].gain - params.bgm_base_gain).abs() < 1e-6);
+    }
+}

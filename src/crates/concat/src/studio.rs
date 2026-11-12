@@ -1083,6 +1083,7 @@ pub struct Studio {
 
     // ── the sheets and menus ──
     pub export: crate::panes::export::ExportPane,
+    pub factory: crate::panes::factory::FactoryPane,
     pub settings: crate::panes::settings::SettingsPane,
     pub relink: crate::panes::relink::RelinkPane,
     /// What the confirmation sheet is asking about, while it is up.
@@ -3108,6 +3109,7 @@ impl Studio {
             clipboard: Vec::new(),
             monitor: crate::panes::monitor::MonitorPane::default(),
             export: Default::default(),
+            factory: Default::default(),
             settings: crate::panes::settings::SettingsPane::default(),
             relink: crate::panes::relink::RelinkPane::default(),
             confirm: None,

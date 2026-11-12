@@ -10,6 +10,7 @@
 pub mod batch;
 pub mod graph;
 pub mod nodes;
+pub mod pipeline;
 pub mod retention;
 pub mod thumbnail;
 

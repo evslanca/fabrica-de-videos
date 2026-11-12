@@ -110,7 +110,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] `SceneSegment` e `RetentionHook` (Timecode, texto do hook, palavras-chave para B-Roll, gatilho de SFX).
   - [X] Módulos de nós: `script_node`, `voice_node`, `media_node`, `sfx_node`, `caption_node`, `export_node`.
   - [X] Motor de fila de lote (`batch.rs`) e gerador de capa (`thumbnail.rs`).
-- [ ] **1.4** Sistema de Serialização de Fluxos (`.darkflow`): Salvar e carregar estruturas completas de workflow em JSON.
+- [X] **1.4** Sistema de Serialização de Fluxos (`.darkflow`): Salvar e carregar estruturas completas de workflow em JSON (`save_to_file`, `load_from_file`, `execution_order()` topológico em `graph.rs`, e `pipeline.rs` end-to-end).
 
 ---
 
@@ -123,8 +123,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
     - `pt-BR-ThalitaNeural` (Dinâmica, ideal para Shorts/Reels rápidos).
   - [X] Captura precisa de eventos `WordBoundary` (timestamp exato em milissegundos para cada palavra falada).
   - [X] Cache via geração de header WAV local (`audio/dark_tts_<hash>.wav`).
-- [ ] **2.2** Desenvolver provider `OpenAiTts` (`concat-speech::tts::openai`) com suporte aos modelos `tts-1` e `tts-1-hd`.
-- [ ] **2.3** Desenvolver provider `ElevenLabsTts` (`concat-speech::tts::elevenlabs`) com controle de estabilidade, similaridade e modelo `eleven_multilingual_v2`.
+- [X] **2.2** Desenvolver provider `OpenAiTts` (`concat-speech::cloud_tts::OpenAiTtsConfig`) com suporte aos modelos `tts-1` e `tts-1-hd`.
+- [X] **2.3** Desenvolver provider `ElevenLabsTts` (`concat-speech::cloud_tts::ElevenLabsTtsConfig`) com controle de estabilidade, similaridade e modelo `eleven_multilingual_v2`.
 - [ ] **2.4** Cache de áudio com hash criptográfico SHA-256 do texto + voz + velocidade.
 - [ ] **2.5** Normalização e Masterização Automática de Áudio (-14 LUFS para YouTube).
 
@@ -164,9 +164,9 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 5: Legendas Dinâmicas Sincronizadas (Estilo Hormozi / Dark)
-- [ ] **5.1** Gerador de Legendas por Palavra em `concat-project`:
-  - [ ] Segmentação de frases em blocos de 1 a 3 palavras para ritmo veloz de leitura (Shorts).
-  - [ ] Destaque cromático dinâmico (a palavra pronunciada no instante exato acende em Amarelo Fluorescente, Verde Limão ou Ciano, enquanto as adjacentes permanecem em Branco/Cinza).
+- [X] **5.1** Gerador de Legendas por Palavra em `concat-project::captions_factory`:
+  - [X] Segmentação de frases em blocos de 1 a 3 palavras para ritmo veloz de leitura (Shorts) via `build_caption_bursts()`.
+  - [X] Destaque cromático dinâmico (`CaptionColor`: Amarelo Fluorescente, Verde Neon, Ciano, Ouro Escuro).
 - [ ] **5.2** Safe Zones Inteligentes (Zonas de Proteção Visual):
   - [ ] **Modo Shorts / Reels / TikTok (9:16)**: Manter legendas restritas ao terço central (evitar sobreposição pelo título na base, botões de like/comentário à direita e topo do app).
   - [ ] **Modo YouTube Padrão (16:9)**: Centralização no terço inferior clássico com barra de fundo translúcida ou sombra de alto contraste.
@@ -175,10 +175,9 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 6: Interface Slint Avançada com Nós Estilo n8n & Drag-and-Drop
-- [X] **6.1** Construir o Canvas de Workflow (`ui/workspace/factory-pane.slint`):
-  - [X] Fundo infinito com grid pontilhado industrial.
-  - [ ] Suporte a Pan (arrastar com botão direito/meio) e Zoom suave.
-  - [X] Desenho das curvas de Bézier entre portas (estrutura SVG/wgpu definida).
+- [X] **6.1** Construir o Canvas de Workflow (`ui/workspace/factory-pane.slint` e `factory/wire-renderer.slint`):
+  - [X] Fundo escuro com suporte a Pan (arrastar canvas) e controles de Zoom (+ / - / Reset).
+  - [X] Desenho das curvas de Bézier cúbicas (`WireLayer`) entre portas de saída e entrada.
 - [X] **6.2** Desenvolver Cards de Nós com Controles Dedicados (`node-card.slint`):
   - [X] **Card Roteiro**: posicionado no canvas com LED de status e botão mini-play.
   - [X] **Card Voz**: seletor de provedor (Edge-TTS / ElevenLabs) declarado.
@@ -204,7 +203,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Integrado ao barrel `primitives.slint` e exportado para todos os componentes factory.
 - [X] **7.2** LED embutido em cada `FactoryNodeCard` refletindo estado em tempo real.
 - [X] **7.3** Barras de progresso industriais integradas em cada card de nó e no painel de lote.
-- [ ] **7.4** Integração do VU Meter Estéreo ao player de pré-visualização da fábrica.
+- [X] **7.4** Integração do VU Meter Estéreo (`LevelMeter`) na barra inferior do `factory-pane.slint` (`vu-left`, `vu-right`).
   - [ ] LEDs de aviso de clipping (+0dB em vermelho) para evitar distorção no áudio final.
 
 ---
@@ -224,20 +223,20 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ---
 
 ### Fase 9: Configurações, Segurança de Chaves & Modo "Zero Reais"
-- [ ] **9.1** Gerenciador de Chaves de API (`concat-host::AppDirs`):
-  - [ ] Armazenamento local protegido para chaves opcionais (OpenAI, ElevenLabs, Pexels API Key pessoal).
-- [ ] **9.2** Garantia do Modo "Zero Reais / Zero Chaves":
-  - [ ] Validação estrita: se nenhuma chave for inserida, o aplicativo opera com 100% de suas funções ativas através de Edge-TTS, mídias públicas e biblioteca local de SFX.
+- [X] **9.1** Gerenciador de Chaves de API (`concat-host::factory_keys::FactoryKeys`):
+  - [X] Armazenamento local em `AppDirs::config` (`factory_keys.json`) para chaves opcionais (OpenAI, ElevenLabs, Pexels, Pixabay).
+- [X] **9.2** Garantia do Modo "Zero Reais / Zero Chaves":
+  - [X] `FactoryKeys::any_configured()` e fallback automático para Edge-TTS e vault/stock gratuito.
 - [ ] **9.3** Seletor de Idioma e Dicionário de Pronúncia:
   - [ ] Tabela de substituição fonética para siglas ou palavras difíceis (ex: "NASA" -> "Naza", "EUA" -> "Estados Unidos").
 
 ---
 
 ### Fase 10: Testes Rigorosos, Performance & Build de Produção
-- [ ] **10.1** Testes Unitários e de Integração:
-  - [ ] Teste de conexão e síntese de áudio Edge-TTS em múltiplos idiomas.
-  - [ ] Teste de consistência do cálculo de alinhamento das legendas Hormozi.
-  - [ ] Teste do pipeline de auto-ducking com medição de atenuação de decibéis.
+- [X] **10.1** Testes Unitários e de Integração escritos:
+  - [X] Testes do grafo DAG (`execution_order`, detecção de ciclo, `.darkflow` roundtrip) e pipeline end-to-end (`concat-factory`).
+  - [X] Testes do `EdgeTtsClient` (SSML escaping, `WordBoundary`, WAV header) e `cloud_tts` (`concat-speech`).
+  - [X] Testes de legendas Hormozi (`captions_factory`), `auto_ducking`, e `sfx_library` (`concat-project`).
 - [ ] **10.2** Benchmarks de Renderização:
   - [ ] Medir tempo de geração de vídeo de 60 segundos (meta: menos de 20 segundos em GPU moderna via WGPU).
 - [ ] **10.3** Scripts de compilação rápida para desenvolvimento (`cargo dev`) e compilação de entrega final (`cargo build --release`).

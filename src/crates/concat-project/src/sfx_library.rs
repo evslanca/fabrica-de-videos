@@ -98,3 +98,19 @@ pub fn assign_scene_sfx(scene_cut_times: &[f32], riser_before_last_cut: bool) ->
 
     events
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn assigns_whooshes_subbass_and_riser() {
+        let cuts = vec![3.0, 6.5, 10.0, 14.0];
+        let events = assign_scene_sfx(&cuts, true);
+
+        assert!(events.iter().any(|e| e.asset == SfxAsset::WhooshFast));
+        assert!(events.iter().any(|e| e.asset == SfxAsset::WhooshEcho));
+        assert!(events.iter().any(|e| e.asset == SfxAsset::SubBassDrop));
+        assert!(events.iter().any(|e| e.asset == SfxAsset::TensionRiser));
+    }
+}

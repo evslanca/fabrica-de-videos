@@ -71,6 +71,7 @@ pub enum Msg {
 pub fn activity(msg: &Msg) -> Option<Activity> {
     use captions::CaptionsMsg;
     use export::ExportMsg;
+    use factory::FactoryMsg;
     use log::Level::{Debug, Error, Info, Warn};
     use media_bin::MediaMsg;
     use monitor::MonitorMsg;
@@ -88,6 +89,7 @@ pub fn activity(msg: &Msg) -> Option<Activity> {
             | TimelineMsg::Resized(_),
         )
         | Msg::Export(ExportMsg::Progress { .. })
+        | Msg::Factory(FactoryMsg::StageProgress { .. })
         | Msg::Captions(CaptionsMsg::Progress(_))
         | Msg::Speech(SpeechMsg::Progress(_))
         | Msg::Settings(SettingsMsg::ModelProgress { .. } | SettingsMsg::InstallProgress { .. }) => {

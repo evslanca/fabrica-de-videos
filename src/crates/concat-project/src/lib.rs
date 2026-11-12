@@ -23,6 +23,7 @@
 
 pub mod auto_ducking;
 pub mod capcut;
+pub mod captions_factory;
 pub mod commands;
 pub mod factory_assembler;
 pub mod sfx_library;

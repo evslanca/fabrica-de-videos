@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+// Cubic Bezier wire renderer for connecting node output ports to input ports,
+// inspired by n8n's workflow canvas.
+
+export struct WireConnection {
+    start-x: float,
+    start-y: float,
+    end-x: float,
+    end-y: float,
+    active: bool,
+}
+
+export component WireLayer inherits Rectangle {
+    in property <[WireConnection]> wires;
+    in property <length> origin-x: 0px;
+    in property <length> origin-y: 0px;
+    in property <float> zoom: 1.0;
+
+    background: transparent;
+
+    for w in root.wires : Path {
+        property <float> sx: w.start-x * root.zoom + (root.origin-x / 1px);
+        property <float> sy: w.start-y * root.zoom + (root.origin-y / 1px);
+        property <float> ex: w.end-x * root.zoom + (root.origin-x / 1px);
+        property <float> ey: w.end-y * root.zoom + (root.origin-y / 1px);
+        property <float> dx: Math.max(40.0, Math.abs(ex - sx) * 0.5);
+
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: Math.max(1.0, root.width / 1px);
+        viewbox-height: Math.max(1.0, root.height / 1px);
+        width: 100%;
+        height: 100%;
+
+        stroke: w.active ? #3b82f6 : #3f3f52;
+        stroke-width: w.active ? 2.5px : 1.8px;
+        fill: transparent;
+
+        MoveTo {
+            x: sx;
+            y: sy;
+        }
+        CubicTo {
+            control-1-x: sx + dx;
+            control-1-y: sy;
+            control-2-x: ex - dx;
+            control-2-y: ey;
+            x: ex;
+            y: ey;
+        }
+    }
+}

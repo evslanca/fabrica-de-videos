@@ -171,3 +171,36 @@ fn generate_wav_header(duration_seconds: f32, sample_rate: u32, channels: u16) -
     header.extend_from_slice(&data_len.to_le_bytes());
     header
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ssml_escapes_xml_characters() {
+        let client = EdgeTtsClient::new("pt-BR-AntonioNeural");
+        let ssml = client.build_ssml("1 < 2 & 3 > 0 \"test\"");
+        assert!(ssml.contains("&lt;"));
+        assert!(ssml.contains("&amp;"));
+        assert!(ssml.contains("&gt;"));
+        assert!(ssml.contains("&quot;"));
+        assert!(ssml.contains("pt-BR-AntonioNeural"));
+    }
+
+    #[test]
+    fn synthesize_generates_wav_header_and_word_boundaries() {
+        let client = EdgeTtsClient::default();
+        let out = std::env::temp_dir().join("edge_tts_unit_test.wav");
+        let _ = std::fs::remove_file(&out);
+        let res = client
+            .synthesize_to_file("Mistério profundo nas profundezas do oceano", &out)
+            .expect("synthesize_to_file should succeed");
+
+        assert_eq!(res.word_boundaries.len(), 6);
+        assert!(res.duration_seconds >= 1.0);
+        let bytes = std::fs::read(&out).unwrap();
+        assert_eq!(&bytes[0..4], b"RIFF");
+        assert_eq!(&bytes[8..12], b"WAVE");
+        let _ = std::fs::remove_file(&out);
+    }
+}
