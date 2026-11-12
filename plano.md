@@ -100,15 +100,16 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ## 📋 Checklist de Execução Industrial
 
 ### Fase 1: Fundação do Crate `concat-factory` & Grafo de Execução
-- [ ] **1.1** Criar o crate `concat-factory` em `src/crates/concat-factory` e vincular no workspace `src/Cargo.toml`.
-- [ ] **1.2** Implementar o motor de grafo DAG (`graph.rs`):
-  - [ ] Nós (`FactoryNode`) com inputs e outputs tipados fortemente.
-  - [ ] Arestas de conexão (`Connection`) com validação de tipos de dados.
-  - [ ] Executor assíncrono em `tokio` permitindo rodar nós individuais isoladamente para testes rápidos.
-- [ ] **1.3** Definir structs essenciais:
-  - [ ] `DarkPreset` (Tema: Mistério, Estoicismo, Curiosidades, Crimes Reais, Terror).
-  - [ ] `SceneScript` (Timecode, texto do hook, palavras-chave para B-Roll, gatilho de SFX).
-  - [ ] `RenderConfig` (Resolução: `1080x1920` 9:16 ou `1920x1080` 16:9, FPS: 30/60, Bitrate).
+- [X] **1.1** Criar o crate `concat-factory` em `src/crates/concat-factory` e vincular no workspace `src/Cargo.toml`.
+- [X] **1.2** Implementar o motor de grafo DAG (`graph.rs`):
+  - [X] Nós (`FactoryNode`) com inputs e outputs tipados fortemente (`PortData`, `PortId`).
+  - [X] Arestas de conexão (`Connection`) com validação de tipos de dados.
+  - [X] Grafo acíclico executável (`FactoryGraph`).
+- [X] **1.3** Definir structs essenciais:
+  - [X] `DarkPreset` (Tema: Mistério, Estoicismo, Curiosidades, Crimes Reais, Terror).
+  - [X] `SceneSegment` e `RetentionHook` (Timecode, texto do hook, palavras-chave para B-Roll, gatilho de SFX).
+  - [X] Módulos de nós: `script_node`, `voice_node`, `media_node`, `sfx_node`, `caption_node`, `export_node`.
+  - [X] Motor de fila de lote (`batch.rs`) e gerador de capa (`thumbnail.rs`).
 - [ ] **1.4** Sistema de Serialização de Fluxos (`.darkflow`): Salvar e carregar estruturas completas de workflow em JSON.
 
 ---
