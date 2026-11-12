@@ -199,6 +199,104 @@ impl PronunciationDict {
     }
 }
 
+/// Public Edge Speech WebSocket endpoint base (TrustedClientToken passed as query parameter).
+pub const EDGE_TTS_WSS_ENDPOINT: &str =
+    "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1";
+
+/// Builds the initial `speech.config` JSON text frame required by the Edge Speech WebSocket.
+pub fn build_speech_config_message(timestamp_iso: &str) -> String {
+    format!(
+        "X-Timestamp:{timestamp_iso}\r\n\
+         Content-Type:application/json; charset=utf-8\r\n\
+         Path:speech.config\r\n\r\n\
+         {{\"context\":{{\"synthesis\":{{\"audio\":{{\"metadataoptions\":{{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"true\"}},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}}}}}"
+    )
+}
+
+/// Builds an `ssml` text frame for a synthesis request on the Edge Speech WebSocket.
+pub fn build_ssml_request_message(request_id: &str, timestamp_iso: &str, ssml: &str) -> String {
+    format!(
+        "X-RequestId:{request_id}\r\n\
+         Content-Type:application/ssml+xml\r\n\
+         X-Timestamp:{timestamp_iso}\r\n\
+         Path:ssml\r\n\r\n\
+         {ssml}"
+    )
+}
+
+/// Extracts the raw MP3 audio payload from an Edge Speech WebSocket binary frame.
+///
+/// Binary frame layout: `[2-byte big-endian header_len][UTF-8 headers][audio bytes]`.
+pub fn extract_audio_chunk_from_binary_frame(frame: &[u8]) -> Option<&[u8]> {
+    if frame.len() < 2 {
+        return None;
+    }
+    let header_len = u16::from_be_bytes([frame[0], frame[1]]) as usize;
+    let payload_start = 2 + header_len;
+    if payload_start > frame.len() {
+        return None;
+    }
+    let headers = std::str::from_utf8(&frame[2..payload_start]).ok()?;
+    if !headers.contains("Path:audio") {
+        return None;
+    }
+    Some(&frame[payload_start..])
+}
+
+#[derive(Deserialize)]
+struct EdgeMetadataEnvelope {
+    #[serde(rename = "Metadata", default)]
+    metadata: Vec<EdgeMetadataItem>,
+}
+
+#[derive(Deserialize)]
+struct EdgeMetadataItem {
+    #[serde(rename = "Type")]
+    kind: String,
+    #[serde(rename = "Data")]
+    data: EdgeMetadataData,
+}
+
+#[derive(Deserialize)]
+struct EdgeMetadataData {
+    #[serde(rename = "Offset", default)]
+    offset_100ns: u64,
+    #[serde(rename = "Duration", default)]
+    duration_100ns: u64,
+    #[serde(default)]
+    text: Option<EdgeMetadataText>,
+}
+
+#[derive(Deserialize)]
+struct EdgeMetadataText {
+    #[serde(rename = "Text", default)]
+    text: String,
+}
+
+/// Parses an `audio.metadata` JSON payload from Edge Speech into [`WordBoundary`] events.
+///
+/// Microsoft Speech reports `Offset` and `Duration` in 100-nanosecond ticks (`10_000` ticks = 1 ms).
+pub fn parse_word_boundary_json(json_payload: &str) -> Vec<WordBoundary> {
+    let Ok(env) = serde_json::from_str::<EdgeMetadataEnvelope>(json_payload) else {
+        return Vec::new();
+    };
+    env.metadata
+        .into_iter()
+        .filter(|m| m.kind == "WordBoundary")
+        .filter_map(|m| {
+            let word = m.data.text?.text;
+            if word.trim().is_empty() {
+                return None;
+            }
+            Some(WordBoundary {
+                text: word,
+                audio_offset_ms: m.data.offset_100ns / 10_000,
+                duration_ms: m.data.duration_100ns / 10_000,
+            })
+        })
+        .collect()
+}
+
 /// Minimal standard RIFF/WAV PCM header generator.
 fn generate_wav_header(duration_seconds: f32, sample_rate: u32, channels: u16) -> Vec<u8> {
     let bytes_per_sample = 2u16; // 16-bit PCM
@@ -270,5 +368,42 @@ mod tests {
         assert_eq!(k1, k2);
         assert_ne!(k1, k3);
         assert_eq!(k1.len(), 16);
+    }
+
+    #[test]
+    fn edge_protocol_frames_and_word_boundary_parsing() {
+        let cfg = build_speech_config_message("2026-11-12T19:00:00Z");
+        assert!(cfg.contains("Path:speech.config"));
+        assert!(cfg.contains("\"wordBoundaryEnabled\":\"true\""));
+
+        let req = build_ssml_request_message("req-1", "2026-11-12T19:00:00Z", "<speak/>");
+        assert!(req.contains("X-RequestId:req-1"));
+        assert!(req.contains("Path:ssml"));
+        assert!(req.ends_with("<speak/>"));
+
+        let headers = b"Path:audio\r\nContent-Type:audio/mpeg\r\n";
+        let mut frame = (headers.len() as u16).to_be_bytes().to_vec();
+        frame.extend_from_slice(headers);
+        frame.extend_from_slice(&[0xFF, 0xFB, 0x90, 0x00]);
+        assert_eq!(
+            extract_audio_chunk_from_binary_frame(&frame),
+            Some(&[0xFF, 0xFB, 0x90, 0x00][..])
+        );
+
+        let meta = r#"{
+            "Metadata": [{
+                "Type": "WordBoundary",
+                "Data": {
+                    "Offset": 5000000,
+                    "Duration": 2500000,
+                    "text": { "Text": "Mistério" }
+                }
+            }]
+        }"#;
+        let words = parse_word_boundary_json(meta);
+        assert_eq!(words.len(), 1);
+        assert_eq!(words[0].text, "Mistério");
+        assert_eq!(words[0].audio_offset_ms, 500);
+        assert_eq!(words[0].duration_ms, 250);
     }
 }

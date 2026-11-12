@@ -1164,6 +1164,7 @@ dependencies = [
  "concat-core",
  "concat-effects",
  "concat-export",
+ "concat-factory",
  "concat-host",
  "concat-log",
  "concat-mcp",
@@ -1270,6 +1271,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "concat-factory"
+version = "0.2.10"
+dependencies = [
+ "concat-core",
+ "concat-effects",
+ "concat-host",
+ "concat-media",
+ "concat-project",
+ "concat-speech",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "concat-host"
 version = "0.2.10"
 dependencies = [
@@ -1327,7 +1344,10 @@ dependencies = [
  "log",
  "ndk 0.9.0",
  "resvg",
+ "serde",
+ "serde_json",
  "thiserror 2.0.20",
+ "ureq 2.12.1",
 ]
 
 [[package]]

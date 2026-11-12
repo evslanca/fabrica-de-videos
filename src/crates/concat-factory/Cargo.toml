@@ -10,6 +10,7 @@ description = "Industrial Video Factory: automated, node-based dark video genera
 [dependencies]
 concat-core.workspace = true
 concat-project.workspace = true
+concat-export.workspace = true
 concat-media.workspace = true
 concat-speech.workspace = true
 concat-effects.workspace = true

@@ -9,6 +9,7 @@
 
 pub mod batch;
 pub mod dubbing;
+pub mod exporter;
 pub mod graph;
 pub mod local_models;
 pub mod nodes;

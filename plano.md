@@ -282,10 +282,11 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] `VisualFxPreset` (*ChromaticGlitch*, *VhsScanlines*, *DustAndAsh*, *BeatZoomPulse*, *NoirFlicker*) e `ColorGradeLut` (*NoirHighContrast*, *TealAndOrange*, *HorrorDesaturated*, *GoldenStoic*).
   - [ ] Shaders WGPU executando cada preset no compositor de frames.
 - [ ] **14.3** **Implementação Real de Rede & Exportação Final**:
-  - [ ] Conector WebSocket real para o Microsoft Edge Speech (`wss://speech.platform.bing.com/...`) recebendo áudio real e `WordBoundary` reais.
+  - [X] Protocolo Edge Speech (`concat-speech::edge_tts`): builders `speech.config` / `ssml`, parser de frames binários MP3 e `WordBoundary` (`100ns -> ms`).
+  - [ ] Transporte WebSocket TLS (`tungstenite` / `rustls`) conectando ao endpoint `wss://speech.platform.bing.com/...` em tempo real.
   - [ ] Downloader paralelo real das APIs Pexels e Pixabay para `cache/stock_media/` com retry e progresso.
-  - [X] Conversor `AssembledProject::to_concat_document()` ➔ `concat_project::model::Project` (tracks T1–T4: B-Roll, Narração, BGM com ducking e Legendas + testes unitários).
-  - [ ] Disparo real de render `.mp4` via `concat-export` a partir do `Project` montado.
+  - [X] Conversor `AssembledProject::to_concat_document()` ➔ `concat_project::model::Project` (tracks T1–T4: B-Roll, Narração, BGM com ducking e Legendas + testes unitários — 257/257 passando em `concat-project`).
+  - [X] Ponte de exportação `.mp4` (`concat-factory::exporter::export_assembled_project` via `concat_export::flatten_timeline` + `concat_export::render`).
 
 ---
 
