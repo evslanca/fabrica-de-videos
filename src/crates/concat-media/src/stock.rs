@@ -78,21 +78,60 @@ struct PexelsVideoFile {
     quality: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct PixabayVideoResponse {
+    #[serde(default)]
+    hits: Vec<PixabayVideoHit>,
+}
+
+#[derive(Deserialize)]
+struct PixabayVideoHit {
+    id: u64,
+    duration: Option<f32>,
+    user: Option<String>,
+    videos: PixabayVideoVariants,
+}
+
+#[derive(Deserialize)]
+struct PixabayVideoVariants {
+    large: Option<PixabayVideoFile>,
+    medium: Option<PixabayVideoFile>,
+    small: Option<PixabayVideoFile>,
+}
+
+#[derive(Deserialize)]
+struct PixabayVideoFile {
+    url: String,
+    width: Option<u32>,
+    height: Option<u32>,
+}
+
 /// Curated free stock media client.
 #[derive(Default)]
 pub struct StockClient {
-    /// Optional Pexels API key. If empty, local vault / curated collections are prioritized.
+    /// Optional Pexels API key. If empty, Pixabay or local vault is used.
     pub pexels_key: Option<String>,
+    /// Optional Pixabay API key used as secondary free stock provider.
+    pub pixabay_key: Option<String>,
 }
 
 impl StockClient {
-    /// Creates a new client.
+    /// Creates a new client with an optional Pexels API key.
     pub fn new(pexels_key: Option<String>) -> Self {
-        Self { pexels_key }
+        Self {
+            pexels_key,
+            pixabay_key: None,
+        }
+    }
+
+    /// Attaches an optional Pixabay API key for fallback stock queries.
+    pub fn with_pixabay_key(mut self, pixabay_key: Option<String>) -> Self {
+        self.pixabay_key = pixabay_key;
+        self
     }
 
     /// Searches for stock video footage matching query and aspect ratio.
-    /// Queries Pexels over HTTPS when `pexels_key` is configured, falling back
+    /// Queries Pexels first, then Pixabay over HTTPS when configured, falling back
     /// to curated dark vault presets on offline/no-key setups.
     pub fn search_videos(&self, request: &StockSearchRequest) -> Vec<StockMediaItem> {
         log::info!(
@@ -104,8 +143,16 @@ impl StockClient {
         if let Some(key) = self.pexels_key.as_deref().filter(|k| !k.trim().is_empty()) {
             match self.query_pexels_videos(key, request) {
                 Ok(items) if !items.is_empty() => return items,
-                Ok(_) => log::warn!("Pexels returned 0 videos for '{}', using vault", request.query),
-                Err(e) => log::warn!("Pexels API request failed ({}), using vault", e),
+                Ok(_) => log::warn!("Pexels returned 0 videos for '{}', trying Pixabay/vault", request.query),
+                Err(e) => log::warn!("Pexels API request failed ({}), trying Pixabay/vault", e),
+            }
+        }
+
+        if let Some(key) = self.pixabay_key.as_deref().filter(|k| !k.trim().is_empty()) {
+            match self.query_pixabay_videos(key, request) {
+                Ok(items) if !items.is_empty() => return items,
+                Ok(_) => log::warn!("Pixabay returned 0 videos for '{}', using vault", request.query),
+                Err(e) => log::warn!("Pixabay API request failed ({}), using vault", e),
             }
         }
 
@@ -148,6 +195,27 @@ impl StockClient {
             .map_err(|e| format!("invalid JSON from Pexels: {e}"))?;
 
         Ok(parse_pexels_response(parsed))
+    }
+
+    fn query_pixabay_videos(
+        &self,
+        api_key: &str,
+        request: &StockSearchRequest,
+    ) -> Result<Vec<StockMediaItem>, String> {
+        let per_page = request.per_page.max(3).to_string();
+        let resp = ureq::get("https://pixabay.com/api/videos/")
+            .query("key", api_key)
+            .query("q", &request.query)
+            .query("per_page", &per_page)
+            .query("safesearch", "true")
+            .call()
+            .map_err(|e| e.to_string())?;
+
+        let parsed: PixabayVideoResponse = resp
+            .into_json()
+            .map_err(|e| format!("invalid JSON from Pixabay: {e}"))?;
+
+        Ok(parse_pixabay_response(parsed))
     }
 
     /// Downloads a remote stock media item into `cache_dir` (atomic `.part` write).
@@ -198,6 +266,28 @@ fn parse_pexels_response(parsed: PexelsVideoResponse) -> Vec<StockMediaItem> {
         .collect()
 }
 
+fn parse_pixabay_response(parsed: PixabayVideoResponse) -> Vec<StockMediaItem> {
+    parsed
+        .hits
+        .into_iter()
+        .filter_map(|v| {
+            let best = v
+                .videos
+                .large
+                .or(v.videos.medium)
+                .or(v.videos.small)?;
+            Some(StockMediaItem {
+                id: format!("pixabay_{}", v.id),
+                download_url: best.url,
+                width: best.width.unwrap_or(1920),
+                height: best.height.unwrap_or(1080),
+                duration_seconds: v.duration.unwrap_or(5.0),
+                author: v.user.unwrap_or_else(|| "Pixabay".into()),
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,6 +311,28 @@ mod tests {
         assert_eq!(items[0].id, "pexels_42");
         assert_eq!(items[0].download_url, "https://cdn/hd.mp4");
         assert_eq!(items[0].width, 1920);
+    }
+
+    #[test]
+    fn parses_pixabay_json_picking_large_or_medium() {
+        let json = r#"{
+            "hits": [{
+                "id": 99,
+                "duration": 12.0,
+                "user": "Nocturnal",
+                "videos": {
+                    "medium": { "url": "https://cdn/med.mp4", "width": 1280, "height": 720 },
+                    "large": { "url": "https://cdn/lg.mp4", "width": 1920, "height": 1080 }
+                }
+            }]
+        }"#;
+        let parsed: PixabayVideoResponse = serde_json::from_str(json).unwrap();
+        let items = parse_pixabay_response(parsed);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].id, "pixabay_99");
+        assert_eq!(items[0].download_url, "https://cdn/lg.mp4");
+        assert_eq!(items[0].width, 1920);
+        assert_eq!(items[0].author, "Nocturnal");
     }
 
     #[test]

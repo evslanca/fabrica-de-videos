@@ -135,7 +135,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Busca inteligente por palavras-chave em inglês e português (`query_pexels_videos` via HTTPS com `ureq` + fallback vault).
   - [X] Filtro por orientação (`portrait` para Shorts ou `landscape` para YouTube).
   - [X] Download para cache local com escrita atômica `.part` (`download_to_cache()` + testes unitários).
-- [ ] **3.2** Criar cliente Pixabay API em `concat-media::stock::pixabay` como contingência automática caso o Pexels atinja limite.
+- [X] **3.2** Criar cliente Pixabay API em `concat-media::stock` (`query_pixabay_videos` + `parse_pixabay_response`) como contingência automática caso o Pexels atinja limite.
 - [X] **3.3** Implementar o **Motor Anti-Reutilização de Conteúdo** em `concat-effects::dark_cinema`:
   - [X] **Espelhamento Seletivo**: Inversão horizontal randômica de takes que não contenham texto legível.
   - [X] **Micro Speed Ramping**: Ajuste dinâmico de velocidade (0.97x a 1.03x) para alterar a assinatura digital do vídeo.
@@ -284,7 +284,8 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 - [ ] **14.3** **Implementação Real de Rede & Exportação Final**:
   - [ ] Conector WebSocket real para o Microsoft Edge Speech (`wss://speech.platform.bing.com/...`) recebendo áudio real e `WordBoundary` reais.
   - [ ] Downloader paralelo real das APIs Pexels e Pixabay para `cache/stock_media/` com retry e progresso.
-  - [ ] Conversor `AssembledProject` ➔ `concat_project::model::Document` + disparo real de render `.mp4` via `concat-export`.
+  - [X] Conversor `AssembledProject::to_concat_document()` ➔ `concat_project::model::Project` (tracks T1–T4: B-Roll, Narração, BGM com ducking e Legendas + testes unitários).
+  - [ ] Disparo real de render `.mp4` via `concat-export` a partir do `Project` montado.
 
 ---
 

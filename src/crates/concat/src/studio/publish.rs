@@ -45,6 +45,52 @@ impl Studio {
         self.publish_lanes(app, models);
         self.publish_chrome(app, models);
         self.publish_dock(app, models);
+        self.publish_factory(app);
+    }
+
+    /// Synchronizes the Factory workflow canvas state (LEDs, progress, aspect,
+    /// selection, and batch status) into Slint's `FactoryData` global.
+    pub fn publish_factory(&self, app: &App) {
+        use slint::Model;
+        let factory_ui = app.global::<crate::ui::FactoryData>();
+        factory_ui.set_aspect_16_9(self.factory.aspect_16_9);
+        factory_ui.set_batch_running(self.factory.batch_running);
+
+        let selected_id = self.factory.selected_node_id.as_deref().unwrap_or("");
+        factory_ui.set_selected_node_id(selected_id.into());
+
+        let nodes = factory_ui.get_nodes();
+        for i in 0..nodes.row_count() {
+            if let Some(mut row) = nodes.row_data(i) {
+                let id = row.id.as_str();
+                let progress = self
+                    .factory
+                    .node_progress
+                    .get(id)
+                    .copied()
+                    .unwrap_or(0.0);
+                let status = if progress >= 1.0 {
+                    crate::ui::LedState::Success
+                } else if progress > 0.0 && self.factory.fabricating {
+                    if id == "export" {
+                        crate::ui::LedState::Rendering
+                    } else {
+                        crate::ui::LedState::Working
+                    }
+                } else if self.factory.fabricating {
+                    crate::ui::LedState::Ready
+                } else {
+                    crate::ui::LedState::Off
+                };
+                row.progress = progress;
+                row.status = status;
+                if id == selected_id {
+                    factory_ui.set_selected_node_title(row.title.clone());
+                    factory_ui.set_selected_node_status(status);
+                }
+                nodes.set_row_data(i, row);
+            }
+        }
     }
 
     /// The project's saved state and the toast, and nothing else: what a

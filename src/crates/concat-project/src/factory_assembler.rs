@@ -11,6 +11,9 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::auto_ducking::{DuckingParams, GainKeyframe, build_ducking_keyframes};
+use crate::model::{
+    Clip, ClipKind, MediaItem, MediaKind, MediaOrigin, Project, TextStyle, VideoSettings,
+};
 
 /// A single visual scene unit ready for timeline placement.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,5 +111,213 @@ impl AssembledProject {
             bgm_path,
             thumbnail_path: None,
         }
+    }
+
+    /// Converts this assembled factory project into a native Concat [`Project`]
+    /// document ready for timeline inspection, editing, and GPU export.
+    ///
+    /// Track layout:
+    /// - `T1`: B-Roll video scenes (with horizontal mirror anti-reuse flag)
+    /// - `T2`: Voice narration clips (`MediaOrigin::Speech`)
+    /// - `T3`: Background music track (auto-ducked base level)
+    /// - `T4`: Dynamic caption bursts (`ClipKind::Text`)
+    pub fn to_concat_document(&self) -> Project {
+        let mut video = VideoSettings::default();
+        if self.width > 0 {
+            video.width = self.width;
+        }
+        if self.height > 0 {
+            video.height = self.height;
+        }
+
+        let mut project = Project::with_video(video);
+        let mut media_seq = 1usize;
+        let mut clip_seq = 1usize;
+
+        let mut media_items = Vec::new();
+        let mut clips = Vec::new();
+
+        for scene in &self.scenes {
+            let duration = (scene.duration_seconds as f64).max(1.0 / 60.0);
+            let start = (scene.start_seconds as f64).max(0.0);
+
+            // T1: Video B-Roll
+            let v_media_id = format!("m{media_seq}");
+            media_seq += 1;
+            let v_name = scene
+                .video_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("scene.mp4")
+                .to_string();
+            media_items.push(MediaItem {
+                id: v_media_id.clone(),
+                path: scene.video_path.to_string_lossy().into_owned(),
+                name: v_name.clone(),
+                duration: Some(duration),
+                kind: MediaKind::Video,
+                width: Some(self.width),
+                height: Some(self.height),
+                ..MediaItem::default()
+            });
+
+            let mut v_clip = Clip::blank(
+                format!("c{clip_seq}"),
+                "T1",
+                ClipKind::Video,
+                v_name,
+                start,
+                duration,
+            );
+            clip_seq += 1;
+            v_clip.media_id = v_media_id;
+            v_clip.flip_h = scene.mirror_horizontal;
+            clips.push(v_clip);
+
+            // T2: Narration Audio (if present)
+            if let Some(audio_path) = &scene.audio_path {
+                let a_media_id = format!("m{media_seq}");
+                media_seq += 1;
+                let a_name = audio_path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("voice.wav")
+                    .to_string();
+                media_items.push(MediaItem {
+                    id: a_media_id.clone(),
+                    path: audio_path.to_string_lossy().into_owned(),
+                    name: a_name.clone(),
+                    duration: Some(duration),
+                    kind: MediaKind::Audio,
+                    has_audio: true,
+                    origin: Some(MediaOrigin::Speech),
+                    ..MediaItem::default()
+                });
+
+                let mut a_clip = Clip::blank(
+                    format!("c{clip_seq}"),
+                    "T2",
+                    ClipKind::Audio,
+                    a_name,
+                    start,
+                    duration,
+                );
+                clip_seq += 1;
+                a_clip.media_id = a_media_id;
+                clips.push(a_clip);
+            }
+        }
+
+        // T3: Background Music (with ducking base gain)
+        if let Some(bgm_path) = &self.bgm_path {
+            let bgm_duration = (self.total_duration_seconds as f64).max(1.0 / 60.0);
+            let bgm_media_id = format!("m{media_seq}");
+            media_seq += 1;
+            let bgm_name = bgm_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("bgm.wav")
+                .to_string();
+            media_items.push(MediaItem {
+                id: bgm_media_id.clone(),
+                path: bgm_path.to_string_lossy().into_owned(),
+                name: bgm_name.clone(),
+                duration: Some(bgm_duration),
+                kind: MediaKind::Audio,
+                has_audio: true,
+                ..MediaItem::default()
+            });
+
+            let mut bgm_clip = Clip::blank(
+                format!("c{clip_seq}"),
+                "T3",
+                ClipKind::Audio,
+                bgm_name,
+                0.0,
+                bgm_duration,
+            );
+            clip_seq += 1;
+            bgm_clip.media_id = bgm_media_id;
+            bgm_clip.volume = self
+                .ducking_keyframes
+                .iter()
+                .map(|k| k.gain as f64)
+                .min_by(|a, b| a.total_cmp(b))
+                .unwrap_or(0.35);
+            clips.push(bgm_clip);
+        }
+
+        // T4: Caption Bursts
+        for burst in &self.caption_bursts {
+            let start = (burst.start_seconds as f64).max(0.0);
+            let duration = ((burst.end_seconds - burst.start_seconds) as f64).max(1.0 / 60.0);
+            let text = burst.words.join(" ");
+            let mut t_clip = Clip::blank(
+                format!("c{clip_seq}"),
+                "T4",
+                ClipKind::Text,
+                text.clone(),
+                start,
+                duration,
+            );
+            clip_seq += 1;
+            t_clip.text = Some(TextStyle {
+                content: text,
+                ..TextStyle::default()
+            });
+            clips.push(t_clip);
+        }
+
+        let _ = media_seq;
+        project.media = media_items;
+        project.active_mut().clips = clips;
+        project
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn converts_assembled_project_to_concat_document() {
+        let scenes = vec![AssembledScene {
+            index: 0,
+            start_seconds: 0.0,
+            duration_seconds: 4.5,
+            video_path: PathBuf::from("cache/scene0.mp4"),
+            audio_path: Some(PathBuf::from("cache/voice0.wav")),
+            mirror_horizontal: true,
+            ken_burns_motion: "zoom_in".to_string(),
+        }];
+        let captions = vec![CaptionBurst {
+            words: vec!["OLÁ".into(), "MUNDO".into()],
+            start_seconds: 0.2,
+            end_seconds: 1.4,
+            active_word_index: 0,
+        }];
+        let assembled = AssembledProject::assemble(
+            scenes,
+            Some(PathBuf::from("cache/bgm.wav")),
+            captions,
+            1080,
+            1920,
+            &DuckingParams::default(),
+        );
+
+        let doc = assembled.to_concat_document();
+        assert_eq!(doc.active().video.width, 1080);
+        assert_eq!(doc.active().video.height, 1920);
+        assert_eq!(doc.media.len(), 3);
+        assert_eq!(doc.active().clips.len(), 4);
+        assert_eq!(doc.active().clips[0].track_id, "T1");
+        assert!(doc.active().clips[0].flip_h);
+        assert_eq!(doc.active().clips[1].track_id, "T2");
+        assert_eq!(doc.active().clips[2].track_id, "T3");
+        assert_eq!(doc.active().clips[3].track_id, "T4");
+        assert_eq!(
+            doc.active().clips[3].text.as_ref().unwrap().content,
+            "OLÁ MUNDO"
+        );
     }
 }
