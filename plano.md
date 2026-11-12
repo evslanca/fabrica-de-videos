@@ -301,6 +301,20 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 
 ---
 
+### Fase 16: Criação de Músicas IA (Sem Voz / Instrumental & Com Voz / Letra)
+- [ ] **16.1** **Nó de Criação Musical (`concat-factory::nodes::music_node`)**:
+  - [ ] Modo **Sem Voz (Instrumental / BGM 100% Livre de Copyright)**: Geração de trilhas exclusivas por gênero e clima (*Dark Ambient*, *Phonk*, *Horror Drone*, *Epic Cinematic*, *Lo-Fi Mistério*) com controle de BPM e duração exata do vídeo.
+  - [ ] Modo **Com Voz (Vocal + Letra)**: Geração de música cantada/rap/coral a partir de prompt de estilo + letra personalizada (ou letra gerada pelo Roteirista IA) com escolha de timbre vocal (Masculino, Feminino, Coral Etéreo).
+- [ ] **16.2** **Motor Local ONNX & Provedores Opcionais de Música**:
+  - [ ] Execução local gratuita via **ONNX Runtime (`ort`)** (modelos MusicGen / ACE-Step / YuE no `concat-host::models`) sem custo por faixa.
+  - [ ] Conector opcional para APIs externas (Suno / Udio / ElevenLabs Music) configurável no `FactoryKeys`.
+- [ ] **16.3** **Extração de Stems & Sincronia de Batida (Beat Sync)**:
+  - [ ] Separação automática de vocal e instrumental via `concat-speech::vocals` / `isolate` (transformar qualquer música gerada em versão instrumental ou acapella).
+  - [ ] Detecção automática de BPM e picos de batida (`peaks.rs`) para sincronizar cortes de B-Roll e efeitos `Zoom Pulse` no ritmo da música.
+  - [ ] Integração direta com o **Nó SFX & Áudio** e `auto_ducking.rs` quando usada como música de fundo atrás da narração.
+
+---
+
 ## 🎯 Como Operar e Atualizar Este Documento
 - Sempre que uma tarefa for implementada e validada com testes, marque `[X]`.
 - O plano foi desenhado para ser executado de forma sequencial, garantindo que o núcleo de áudio e dados esteja sólido antes da montagem da interface gráfica no Slint.
