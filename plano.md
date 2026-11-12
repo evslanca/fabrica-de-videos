@@ -1,0 +1,253 @@
+# 🎬 Plano Diretor: Fábrica Industrial de Vídeos Dark & Shorts/Reels
+**Projeto:** Concat Video Engine & Studio (`C:\PROJETOS 2026\Eli Concat`)  
+**Arquitetura:** 100% Nativo em Rust (Slint UI + WGPU/Skia + Workspace Crates)  
+**Propósito:** Transformar o Concat em uma **Linha de Produção Automatizada de Vídeos Dark de Alta Retenção** para YouTube (16:9) e Redes Sociais (9:16 Shorts/Reels/TikTok).
+
+---
+
+## 🔬 O Que Faltava na Versão Anterior & Melhorias Estruturais Aplicadas
+
+1. **Blindagem Contra "Conteúdo Reutilizado" do YouTube (Anti-Reused Content Engine)**:
+   - *Problema do plano anterior:* Juntar vídeos de estoque públicos faz o canal perder a monetização por diretriz de conteúdo repetitivo.
+   - *Solução profissional inserida:* Camada de pós-processamento algorítmico exclusivo (Color Grading LUT escuro, granulação analógica de cinema 35mm, vinheta ótica dinâmica, micro-variações de velocidade 0.98x-1.02x imperceptíveis e espelhamento inteligente de b-rolls).
+
+2. **Engenharia de Retenção & Neuro-Design de Vídeo**:
+   - *Problema do plano anterior:* Roteiro genérico sem estrutura de retenção.
+   - *Solução profissional inserida:* Algoritmo de montagem baseado em **Hooks de 3 Segundos**, **Pattern Interrupts** (mudança de estímulo visual/auditivo a cada 3 a 5 segundos) e **Open Loops** na narrativa.
+
+3. **Automação de Efeitos Sonoros (SFX Automation)**:
+   - *Problema do plano anterior:* Apenas narração e música de fundo; vídeos dark sem SFX têm retenção baixíssima.
+   - *Solução profissional inserida:* Trilha de SFX procedural em Rust (Whooshes nas transições, Risers para criar tensão, Braam/Thuds de impacto e Pops sincronizados com palavras-chave das legendas).
+
+4. **Nós Executáveis Independentes no Estilo n8n (Graph Engine Real)**:
+   - *Problema do plano anterior:* Apenas layout visual estático inspirado em nós.
+   - *Solução profissional inserida:* Grafo real com portas tipadas (`InputPort<T>`, `OutputPort<T>`), fios com curvas de Bézier cúbicas via GPU e **botão de disparo/teste individual por nó** (ex: ouvir apenas o áudio gerado no Nó 2 sem precisar renderizar o vídeo inteiro).
+
+5. **Geração Integrada de Thumbnails & Metadados de Publicação**:
+   - *Problema do plano anterior:* Faltava a embalagem do vídeo (capa e textos).
+   - *Solução profissional inserida:* Gerador automático de Thumbnail de alto contraste (1280x720 para YouTube / 1080x1920 capa de Shorts) com detecção do frame de maior impacto + texto de curiosidade com outline e glow.
+
+6. **Linha de Produção em Lote (Batch Factory)**:
+   - *Problema do plano anterior:* Foco em 1 vídeo individual.
+   - *Solução profissional inserida:* Fila de produção em lote: o operador insere 10 temas em uma lista, e a fábrica compila os 10 vídeos sequencialmente em background, organizando cada pasta com `video.mp4`, `thumb.jpg`, `title.txt`, `description.txt` e `tags.txt`.
+
+---
+
+## 🗺️ Arquitetura Detalhada dos Crates
+
+```
+C:\PROJETOS 2026\Eli Concat\src\crates\
+├── concat-factory/              [NOVO CRATE: Motor da Linha de Produção]
+│   ├── src/
+│   │   ├── lib.rs              # Registro do crate e API pública
+│   │   ├── graph.rs            # Grafo de execução acíclico (DAG) estilo n8n
+│   │   ├── nodes/              # Implementação isolada de cada nó do pipeline
+│   │   │   ├── script_node.rs  # Roteirização, Hooks e quebra em cenas
+│   │   │   ├── voice_node.rs   # Orquestração de TTS e timestamps
+│   │   │   ├── media_node.rs   # Coleta e curadoria de B-Rolls
+│   │   │   ├── sfx_node.rs     # Injeção procedural de efeitos sonoros
+│   │   │   ├── caption_node.rs # Estilização e animação de legendas
+│   │   │   └── export_node.rs  # Perfis 16:9, 9:16 e encode GPU
+│   │   ├── batch.rs            # Gerenciador de fila e automação em lote
+│   │   ├── retention.rs        # Algoritmos de retenção e pattern interrupts
+│   │   └── thumbnail.rs        # Gerador de capas de alto CTR
+│   └── Cargo.toml
+│
+├── concat-speech/               [EXTENSÃO: Novos Provedores de Voz]
+│   └── src/tts/
+│       ├── edge.rs             # [NOVO] Cliente nativo WebSocket Microsoft Edge Speech
+│       ├── openai.rs           # [NOVO] Provider OpenAI TTS
+│       └── elevenlabs.rs       # [NOVO] Provider ElevenLabs TTS
+│
+├── concat-media/                [EXTENSÃO: Banco de Mídias Gratuitas]
+│   └── src/stock/
+│       ├── mod.rs              # Trait StockMediaProvider
+│       ├── pexels.rs           # [NOVO] Cliente API Pexels (Vídeos/Fotos HD e 4K)
+│       ├── pixabay.rs          # [NOVO] Cliente API Pixabay (Fallback gratuito)
+│       └── local_vault.rs      # [NOVO] Vault de mídias escuras e texturas locais
+│
+├── concat-effects/              [EXTENSÃO: Efeitos Cinemáticos & Anti-Reúso]
+│   └── src/
+│       ├── ken_burns.rs        # [NOVO] Shader/computador de Pan & Zoom dinâmico
+│       ├── film_grain.rs       # [NOVO] Overlay de granulação analógica 35mm
+│       ├── vignette.rs         # [NOVO] Vinheta ótica de lente escura
+│       └── color_grade.rs      # [NOVO] LUTs para canais dark (Teal & Orange, Noir, Horror)
+│
+├── concat-project/              [EXTENSÃO: Montagem Automatizada & SFX]
+│   └── src/
+│       ├── factory_assembler.rs # Montador de Timeline multitrack automática
+│       ├── sfx_library.rs       # Banco de áudios de transição (whoosh, hit, risers)
+│       └── auto_ducking.rs      # Algoritmo de atenuação suave de volume
+│
+└── concat/                      [EXTENSÃO: Interface Slint & Studio]
+    ├── src/panes/
+    │   └── factory.rs          # Controller do painel e despacho de mensagens
+    └── ui/
+        ├── workspace/
+        │   ├── factory-pane.slint         # Canvas do workflow estilo n8n
+        │   └── factory/
+        │       ├── node-card.slint        # Card visual de cada nó com entradas/saídas
+        │       ├── wire-renderer.slint    # Curvas de conexão bezier com fluxo animado
+        │       ├── node-inspector.slint   # Barra lateral de parâmetros do nó selecionado
+        │       └── batch-queue.slint      # Painel lateral da fila de produção em lote
+        └── primitives/
+            ├── status-led.slint           # LED industrial com estados físicos (glow, blink)
+            └── vu-meter-strip.slint       # Medidor de pico estéreo
+```
+
+---
+
+## 📋 Checklist de Execução Industrial
+
+### Fase 1: Fundação do Crate `concat-factory` & Grafo de Execução
+- [ ] **1.1** Criar o crate `concat-factory` em `src/crates/concat-factory` e vincular no workspace `src/Cargo.toml`.
+- [ ] **1.2** Implementar o motor de grafo DAG (`graph.rs`):
+  - [ ] Nós (`FactoryNode`) com inputs e outputs tipados fortemente.
+  - [ ] Arestas de conexão (`Connection`) com validação de tipos de dados.
+  - [ ] Executor assíncrono em `tokio` permitindo rodar nós individuais isoladamente para testes rápidos.
+- [ ] **1.3** Definir structs essenciais:
+  - [ ] `DarkPreset` (Tema: Mistério, Estoicismo, Curiosidades, Crimes Reais, Terror).
+  - [ ] `SceneScript` (Timecode, texto do hook, palavras-chave para B-Roll, gatilho de SFX).
+  - [ ] `RenderConfig` (Resolução: `1080x1920` 9:16 ou `1920x1080` 16:9, FPS: 30/60, Bitrate).
+- [ ] **1.4** Sistema de Serialização de Fluxos (`.darkflow`): Salvar e carregar estruturas completas de workflow em JSON.
+
+---
+
+### Fase 2: Motor de Voz Neural Gratuito (Edge-TTS) & Provedores Cloud
+- [ ] **2.1** Desenvolver cliente Rust puro para **Edge-TTS** (`concat-speech::tts::edge`):
+  - [ ] Protocolo WebSocket seguro nativo com handshake Microsoft Speech.
+  - [ ] Mapeamento e testes com vozes brasileiras de alta performance:
+    - `pt-BR-AntonioNeural` (Grave, ideal para histórias/mistério).
+    - `pt-BR-FranciscaNeural` (Expressiva, excelente para curiosidades/fatos).
+    - `pt-BR-ThalitaNeural` (Dinâmica, ideal para Shorts/Reels rápidos).
+  - [ ] Captura precisa de eventos `WordBoundary` (timestamp exato em milissegundos para cada palavra falada).
+- [ ] **2.2** Desenvolver provider `OpenAiTts` (`concat-speech::tts::openai`) com suporte aos modelos `tts-1` e `tts-1-hd`.
+- [ ] **2.3** Desenvolver provider `ElevenLabsTts` (`concat-speech::tts::elevenlabs`) com controle de estabilidade, similaridade e modelo `eleven_multilingual_v2`.
+- [ ] **2.4** Cache de áudio com hash criptográfico SHA-256 do texto + voz + velocidade: se o texto não mudou, o áudio não é regerado.
+- [ ] **2.5** Normalização e Masterização Automática de Áudio:
+  - [ ] Compressor e Limitador para manter volume padrão comercial (-14 LUFS para YouTube).
+
+---
+
+### Fase 3: Curadoria de B-Rolls Gratuitos & Motor Anti-Reúso
+- [ ] **3.1** Criar cliente Pexels API em `concat-media::stock::pexels`:
+  - [ ] Busca inteligente por palavras-chave em inglês e português.
+  - [ ] Filtro por orientação (`portrait` para Shorts ou `landscape` para YouTube).
+  - [ ] Download assíncrono paralelo com limite de concorrência e barra de progresso.
+- [ ] **3.2** Criar cliente Pixabay API em `concat-media::stock::pixabay` como contingência automática caso o Pexels atinja limite.
+- [ ] **3.3** Implementar o **Motor Anti-Reutilização de Conteúdo** em `concat-effects`:
+  - [ ] **Espelhamento Seletivo**: Inversão horizontal randômica de takes que não contenham texto legível.
+  - [ ] **Micro Speed Ramping**: Ajuste dinâmico de velocidade (0.97x a 1.03x) para alterar a assinatura digital do vídeo.
+  - [ ] **Efeito Ken Burns Procedural** (`ken_burns.rs`): Suave aproximação (1.0x -> 1.15x) ou afastamento com aceleração cúbica (Ease-In-Out).
+  - [ ] **Camada Analógica de Textura**: Shader WGPU com ruído de película 35mm e vinheta com cantos escurecidos cinematográficos.
+  - [ ] **Color Grading Dark**: LUTs de alto contraste e sombras profundas embutidos diretamente no pipeline WGPU.
+
+---
+
+### Fase 4: Biblioteca de Efeitos Sonoros (SFX) & Auto-Ducking
+- [ ] **4.1** Implementar repositório local de SFX embutido no Concat (`assets/sfx/`):
+  - [ ] Categoria *Transitions*: Whoosh rápido, Whoosh com eco, Swish metálico.
+  - [ ] Categoria *Impacts*: Sub-bass Drop, Cinematic Braam, Dark Thud.
+  - [ ] Categoria *Tension*: Drone misterioso, Riser crescente, Batimento cardíaco.
+  - [ ] Categoria *Pops & UI*: Pop seco, Click tátil, Bell suave.
+- [ ] **4.2** Injeção Automática de SFX (`sfx_library.rs`):
+  - [ ] Inserir Whoosh/Swish automaticamente a cada troca de cena.
+  - [ ] Inserir Pop/Click sincronizado com palavras de grande impacto da legenda.
+  - [ ] Inserir Riser nos 3 segundos que antecedem a revelação principal do roteiro.
+- [ ] **4.3** Motor de Auto-Ducking Inteligente (`auto_ducking.rs`):
+  - [ ] Análise do envelope de amplitude da trilha de voz.
+  - [ ] Redução paramétrica da trilha de música de fundo (-16dB a -22dB com attack de 120ms e release de 400ms) durante a fala do narrador.
+
+---
+
+### Fase 5: Legendas Dinâmicas Sincronizadas (Estilo Hormozi / Dark)
+- [ ] **5.1** Gerador de Legendas por Palavra em `concat-project`:
+  - [ ] Segmentação de frases em blocos de 1 a 3 palavras para ritmo veloz de leitura (Shorts).
+  - [ ] Destaque cromático dinâmico (a palavra pronunciada no instante exato acende em Amarelo Fluorescente, Verde Limão ou Ciano, enquanto as adjacentes permanecem em Branco/Cinza).
+- [ ] **5.2** Safe Zones Inteligentes (Zonas de Proteção Visual):
+  - [ ] **Modo Shorts / Reels / TikTok (9:16)**: Manter legendas restritas ao terço central (evitar sobreposição pelo título na base, botões de like/comentário à direita e topo do app).
+  - [ ] **Modo YouTube Padrão (16:9)**: Centralização no terço inferior clássico com barra de fundo translúcida ou sombra de alto contraste.
+- [ ] **5.3** Renderização nativa vetorial via Skia/WGPU para garantir nitidez máxima sem perda de performance.
+
+---
+
+### Fase 6: Interface Slint Avançada com Nós Estilo n8n & Drag-and-Drop
+- [ ] **6.1** Construir o Canvas de Workflow (`ui/workspace/factory-pane.slint`):
+  - [ ] Fundo infinito com grid pontilhado industrial e suporte a Pan (arrastar com botão direito/meio) e Zoom suave.
+  - [ ] Desenho das curvas de Bézier entre portas de saída e entrada com efeito de pulso luminoso na linha quando o dado está fluindo.
+- [ ] **6.2** Desenvolver Cards de Nós com Controles Dedicados:
+  - [ ] **Card Roteiro**: Editor de texto de alta legibilidade, seletor de Nicho e botão de divisão em cenas.
+  - [ ] **Card Voz**: Player de pré-escuta rápida da voz, seletor de provedor (Edge-TTS / ElevenLabs) e controle de tom/velocidade.
+  - [ ] **Card B-Roll**: Visualização em grid das miniaturas dos vídeos selecionados, toggle de Ken Burns e filtro de tags.
+  - [ ] **Card SFX & Áudio**: Sliders de volume relativo (Voz / Música / SFX) e seletor da atmosfera de suspense.
+  - [ ] **Card Legendas**: Seletor de paleta de cores (Cyber, Dark Gold, Toxic Green, Minimalist), tamanho da fonte e outline.
+  - [ ] **Card Exportador**: Alternador 1-click entre 16:9 e 9:16, seletor de taxa de quadros (30/60 fps) e botão master "FABRICAR VÍDEO".
+- [ ] **6.3** Suporte Integral a Arrastar e Soltar (Drag & Drop):
+  - [ ] Soltar vídeos/músicas/imagens do Windows Explorer diretamente no canvas cria um nó de mídia customizado automaticamente.
+  - [ ] Soltar arquivos de roteiro (`.txt`, `.md`, `.json`) preenche e segmenta o nó de roteiro instantaneamente.
+- [ ] **6.4** Execução Isolada de Nós:
+  - [ ] Cada card possui seu próprio botão mini-play para testar e validar o resultado daquele nó individual sem rodar o projeto todo.
+
+---
+
+### Fase 7: Sistema Físico de LEDs de Status & VU Meters em Tempo Real
+- [ ] **7.1** Componente de LED de Status Físico (`ui/primitives/status-led.slint`):
+  - [ ] Design com bisel metálico escuro, lente translúcida e emissão de luz suave (Glow).
+  - [ ] Estados operacionais codificados:
+    - ⚪ **Desligado / Standby**: Nó sem dados.
+    - 🟢 **Pronto (Idle)**: Nó configurado e pronto para disparar.
+    - 🟡 / 🔵 **Trabalhando (Pulsante)**: Processando tarefa assíncrona (ex: baixando vídeo, gerando áudio).
+    - 🟣 **Renderizando**: Frame buffer GPU em operação.
+    - 🔴 **Erro**: Falha de rede ou timeout com tooltip explicativo.
+- [ ] **7.2** Integração do VU Meter Estéreo (`meters.rs` & `vu-meter-strip.slint`):
+  - [ ] Medidor estéreo com balística real (queda logarítmica de 24dB/s e pico retido por 1.5s).
+  - [ ] LEDs de aviso de clipping (+0dB em vermelho) para evitar distorção no áudio final.
+- [ ] **7.3** Barras de Progresso Industriais:
+  - [ ] Barra segmentada estilo console vintage com porcentagem numérica e estimativa de tempo restante (ETA).
+
+---
+
+### Fase 8: Fábrica em Lote (Batch Production) & Gerador de Thumbnails
+- [ ] **8.1** Módulo de Produção em Lote (`concat-factory::batch`):
+  - [ ] Painel de fila de espera com adição em massa (ex: colar 10 temas/roteiros de uma vez).
+  - [ ] Execução sequencial autônoma em segundo plano sem congelar a interface.
+  - [ ] Organização estruturada de pastas de saída:
+    ```
+    /export/
+    └── 2026-11-12_curiosidades_espaciais/
+        ├── video_principal.mp4       # Vídeo 16:9 ou 9:16 finalizado
+        ├── thumbnail.jpg             # Capa de alto contraste gerada
+        ├── roteiro_completo.txt      # Cópia do texto utilizado
+        └── metadados_youtube.json    # Título otimizado, descrição e tags SEO
+    ```
+- [ ] **8.2** Gerador Automático de Thumbnails (`thumbnail.rs`):
+  - [ ] Extração algorítmica do frame de vídeo com maior contraste e saturação.
+  - [ ] Aplicação de filtro escuro nas bordas com realce central.
+  - [ ] Renderização de texto chamativo de alta curiosidade com tipografia bold, sombra pesada e contorno colorido.
+
+---
+
+### Fase 9: Configurações, Segurança de Chaves & Modo "Zero Reais"
+- [ ] **9.1** Gerenciador de Chaves de API (`concat-host::AppDirs`):
+  - [ ] Armazenamento local protegido para chaves opcionais (OpenAI, ElevenLabs, Pexels API Key pessoal).
+- [ ] **9.2** Garantia do Modo "Zero Reais / Zero Chaves":
+  - [ ] Validação estrita: se nenhuma chave for inserida, o aplicativo opera com 100% de suas funções ativas através de Edge-TTS, mídias públicas e biblioteca local de SFX.
+- [ ] **9.3** Seletor de Idioma e Dicionário de Pronúncia:
+  - [ ] Tabela de substituição fonética para siglas ou palavras difíceis (ex: "NASA" -> "Naza", "EUA" -> "Estados Unidos").
+
+---
+
+### Fase 10: Testes Rigorosos, Performance & Build de Produção
+- [ ] **10.1** Testes Unitários e de Integração:
+  - [ ] Teste de conexão e síntese de áudio Edge-TTS em múltiplos idiomas.
+  - [ ] Teste de consistência do cálculo de alinhamento das legendas Hormozi.
+  - [ ] Teste do pipeline de auto-ducking com medição de atenuação de decibéis.
+- [ ] **10.2** Benchmarks de Renderização:
+  - [ ] Medir tempo de geração de vídeo de 60 segundos (meta: menos de 20 segundos em GPU moderna via WGPU).
+- [ ] **10.3** Scripts de compilação rápida para desenvolvimento (`cargo dev`) e compilação de entrega final (`cargo build --release`).
+
+---
+
+## 🎯 Como Operar e Atualizar Este Documento
+- Sempre que uma tarefa for implementada e validada com testes, marque `[X]`.
+- O plano foi desenhado para ser executado de forma sequencial, garantindo que o núcleo de áudio e dados esteja sólido antes da montagem da interface gráfica no Slint.
