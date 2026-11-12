@@ -243,6 +243,64 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 
 ---
 
+### Fase 11: Voice Cloning, Voice Design & Multi-Narrador (100% Local ONNX + Rust)
+- [ ] **11.1** **Voice Cloning Local (`concat-speech::chatterbox` + `VoiceNodeConfig`)**:
+  - [ ] Expor `VoiceEngine::ChatterboxClone` no `VoiceNodeConfig` e no card de Voz.
+  - [ ] Permitir arrastar ou selecionar um clipe de referência (5–15 segundos) para clonar a voz localmente via ONNX Runtime (`ort`), sem custos ou APIs externas.
+- [ ] **11.2** **Voice Design & Controle de Emoção/Prosódia**:
+  - [ ] Seletor de estilo vocal: *Narrador Dark Grave*, *Suspense/Sussurro*, *Documentário Épico*, *Noticiário Urgente*.
+  - [ ] Suporte a tags inline no roteiro: `[pausa 0.8s]`, `[ênfase]`, `[sussurro]`.
+- [ ] **11.3** **Modo Multi-Narrador (Diálogos & Storytelling)**:
+  - [ ] Parser de múltiplos falantes (`[Narrador]:`, `[Testemunha]:`, `[Detetive]:`) atribuindo vozes distintas na mesma faixa/timeline.
+
+---
+
+### Fase 12: Video Dubbing & Escala Global Multi-Idioma
+- [ ] **12.1** **Pipeline de Video Dubbing (`concat-factory::dubbing`)**:
+  - [ ] Ingestão de vídeo pronto ou projeto da fábrica.
+  - [ ] Separação vocal opcional (`concat-speech::isolate` / `vocals`) para preservar música e SFX originais.
+  - [ ] Transcrição com timecodes precisos via `whisper-rs` (`concat-speech::transcribe`).
+- [ ] **12.2** **Tradução & Ressíntese Sincronizada (Time-Stretch)**:
+  - [ ] Ajuste automático de velocidade (`rate`) do TTS no idioma alvo para caber exatamente na janela temporal da fala original.
+  - [ ] Exportação em lote de múltiplos idiomas a partir de 1 único vídeo (PT-BR ➔ EN-US, ES, FR, DE) com legendas Hormozi traduzidas.
+
+---
+
+### Fase 13: Local Models Manager & Roteirista IA Offline
+- [ ] **13.1** **Gerenciador Unificado de Modelos Locais (`concat-host::models`)**:
+  - [ ] Painel de status e download sob demanda com barra de progresso para modelos locais: Whisper (tiny/base/small/medium), Chatterbox ONNX e modelos LLM locais.
+  - [ ] Verificação de integridade e escolha de acelerador (CPU / DirectML / CoreML).
+- [ ] **13.2** **Roteirista IA Integrado (Ollama Local ou API Opcional)**:
+  - [ ] Gerador de roteiro completo a partir de um único tema/nicho: cria Hook de 3s, Open Loops, cenas segmentadas e **keywords em inglês** otimizadas para busca no Pexels.
+  - [ ] Geração automática de título SEO, descrição, tags e frase curta para Thumbnail.
+
+---
+
+### Fase 14: FX Effects Avançados, Masterização Vocal & Ponte Real Rede/GPU
+- [ ] **14.1** **Voice FX Effects & Masterização de Estúdio (DSP em Rust)**:
+  - [ ] Cadeia vocal padrão comercial: High-Pass Filter (80Hz), EQ de presença (3–5kHz), De-Esser, Compressor, Limiter (-1 dBTP) e normalização a **-14 LUFS**.
+  - [ ] **Efeitos Criativos de Voz (FX)**: *Reverb Cavernoso*, *Rádio/Telefone Antigo*, *Voz Sombria (Pitch Down)*, *Eco Espectral*, *Distorção Analógica*.
+- [ ] **14.2** **Visual FX Effects GPU (`concat-effects` + WGPU)**:
+  - [ ] Shaders de *Glitch Cromático*, *VHS / CRT Scanlines*, *Partículas de Poeira/Cinzas*, *Flash/Zoom Pulse* sincronizado com batidas e impactos de SFX.
+- [ ] **14.3** **Implementação Real de Rede & Exportação Final**:
+  - [ ] Conector WebSocket real para o Microsoft Edge Speech (`wss://speech.platform.bing.com/...`) recebendo áudio real e `WordBoundary` reais.
+  - [ ] Downloader paralelo real das APIs Pexels e Pixabay para `cache/stock_media/` com retry e progresso.
+  - [ ] Conversor `AssembledProject` ➔ `concat_project::model::Document` + disparo real de render `.mp4` via `concat-export`.
+
+---
+
+### Fase 15: UX Avançada do Canvas (Drag & Drop Real + Wiring Interativo)
+- [ ] **15.1** **Edição Livre no Canvas**:
+  - [ ] Arrastar e reposicionar qualquer `FactoryNodeCard` no canvas atualizando os cabos Bézier em tempo real.
+  - [ ] Conectar e desconectar portas de entrada/saída diretamente com o mouse.
+- [ ] **15.2** **Drag & Drop Nativo do Sistema Operacional**:
+  - [ ] Soltar `.mp4`, `.mp3`, `.wav`, `.png` direto do Windows Explorer sobre um nó para usá-lo como B-Roll, BGM ou amostra de Voice Cloning.
+  - [ ] Soltar `.txt` / `.md` no nó de Roteiro para importação imediata.
+- [ ] **15.3** **Audition por Cena com Waveform**:
+  - [ ] Editor de roteiro cena a cena com forma de onda (`wave.slint`) e preview instantâneo de áudio/vídeo por cena.
+
+---
+
 ## 🎯 Como Operar e Atualizar Este Documento
 - Sempre que uma tarefa for implementada e validada com testes, marque `[X]`.
 - O plano foi desenhado para ser executado de forma sequencial, garantindo que o núcleo de áudio e dados esteja sólido antes da montagem da interface gráfica no Slint.
