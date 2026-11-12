@@ -217,12 +217,24 @@ impl FactoryPane {
                             }
                         }
                         "mp3" | "wav" | "ogg" | "flac" | "m4a" => {
-                            self.pipeline_config.sfx.bgm_track = Some(path.clone());
-                            self.node_progress.insert("sfx".to_string(), 1.0);
-                            self.last_status = format!(
-                                "Áudio/BGM importado: {}",
-                                path.file_name().and_then(|n| n.to_str()).unwrap_or("audio")
-                            );
+                            if self.selected_node_id.as_deref() == Some("voice") {
+                                self.pipeline_config.voice.design.reference_audio_path =
+                                    Some(path.clone());
+                                self.pipeline_config.voice.engine =
+                                    concat_factory::nodes::voice_node::VoiceEngine::ChatterboxClone;
+                                self.node_progress.insert("voice".to_string(), 1.0);
+                                self.last_status = format!(
+                                    "Referência Voice Cloning: {}",
+                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("ref")
+                                );
+                            } else {
+                                self.pipeline_config.sfx.bgm_track = Some(path.clone());
+                                self.node_progress.insert("sfx".to_string(), 1.0);
+                                self.last_status = format!(
+                                    "Áudio/BGM importado: {}",
+                                    path.file_name().and_then(|n| n.to_str()).unwrap_or("audio")
+                                );
+                            }
                         }
                         "mp4" | "mov" | "mkv" | "webm" | "png" | "jpg" | "jpeg" => {
                             self.pipeline_config.media.custom_broll_paths.push(path.clone());

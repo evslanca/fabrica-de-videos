@@ -100,6 +100,28 @@ pub fn compute_time_stretch_rate(original_ms: u64, estimated_tts_ms: u64) -> i32
     delta_pct.clamp(-40, 60)
 }
 
+/// Expands a single [`crate::pipeline::FactoryPipelineConfig`] into a multi-language
+/// batch (`1 Video -> N Languages`), assigning each language's default neural voice
+/// and a language-suffixed `project_name`.
+pub fn build_multilang_batch_jobs(
+    base_cfg: &crate::pipeline::FactoryPipelineConfig,
+    languages: &[TargetLanguage],
+) -> Vec<(TargetLanguage, crate::pipeline::FactoryPipelineConfig)> {
+    languages
+        .iter()
+        .map(|&lang| {
+            let mut cfg = base_cfg.clone();
+            cfg.voice.voice_id = lang.default_dark_voice().to_string();
+            cfg.export.project_name = format!(
+                "{}_{}",
+                base_cfg.export.project_name,
+                lang.code().to_lowercase()
+            );
+            (lang, cfg)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,5 +140,18 @@ mod tests {
     fn target_languages_map_to_neural_voices() {
         assert_eq!(TargetLanguage::EnglishUs.default_dark_voice(), "en-US-ChristopherNeural");
         assert_eq!(TargetLanguage::Spanish.code(), "es-ES");
+    }
+
+    #[test]
+    fn builds_multilang_batch_jobs_for_scaling() {
+        let base = crate::pipeline::FactoryPipelineConfig::default();
+        let jobs = build_multilang_batch_jobs(
+            &base,
+            &[TargetLanguage::EnglishUs, TargetLanguage::Spanish, TargetLanguage::French],
+        );
+        assert_eq!(jobs.len(), 3);
+        assert_eq!(jobs[0].1.voice.voice_id, "en-US-ChristopherNeural");
+        assert!(jobs[0].1.export.project_name.ends_with("_en-us"));
+        assert_eq!(jobs[2].1.voice.voice_id, "fr-FR-HenriNeural");
     }
 }

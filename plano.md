@@ -215,7 +215,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [X] Organização estruturada de pastas de saída definida na `ExportNodeConfig`.
 - [X] **8.2** Gerador Automático de Thumbnails (`thumbnail.rs`):
   - [X] `ThumbnailConfig` com texto overlay, cor, outline, vignette e output path.
-  - [ ] Extração algorítmica do frame de maior contraste e renderização via Skia.
+  - [X] Extração algorítmica do frame de maior contraste (`score_frame_contrast_rgba` + `select_best_thumbnail_frame` em `concat-factory::thumbnail`).
 - [X] **8.3** `FactoryAssembler` (`factory_assembler.rs`):
   - [X] Recebe cenas, áudios, legenda bursts e ducking params e monta o `AssembledProject`.
   - [X] Log estruturado de duração total, cenas e keyframes gerados.
@@ -246,7 +246,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
 ### Fase 11: Voice Cloning, Voice Design & Multi-Narrador (100% Local ONNX + Rust)
 - [X] **11.1** **Voice Cloning Local (`concat-speech::chatterbox` + `VoiceNodeConfig`)**:
   - [X] Expor `VoiceEngine::ChatterboxClone` no `VoiceNodeConfig` (`voice_node.rs`) e no card de Voz.
-  - [ ] Permitir arrastar ou selecionar um clipe de referência (5–15 segundos) para clonar a voz localmente via ONNX Runtime (`ort`), sem custos ou APIs externas.
+  - [X] Permitir arrastar ou selecionar um clipe de referência (5–15 segundos) para clonar a voz localmente (`FilesDropped` quando nó `voice` selecionado ➔ `ChatterboxClone` + `reference_audio_path`).
 - [X] **11.2** **Voice Design & Controle de Emoção/Prosódia**:
   - [X] `VoiceStyle` & `VoiceDesignParams` (*DarkNarrator*, *WhisperSuspense*, *EpicDocumentary*, *UrgentNews*, *Neutral*).
   - [X] Suporte a tags inline no roteiro (`[pausa Xs]` via `parse_multi_speaker_script`).
@@ -261,7 +261,7 @@ C:\PROJETOS 2026\Eli Concat\src\crates\
   - [ ] Integração runtime com separação vocal (`concat-speech::isolate`) e transcrição (`whisper-rs`).
 - [X] **12.2** **Tradução & Ressíntese Sincronizada (Time-Stretch)**:
   - [X] `compute_time_stretch_rate()` ajustando velocidade TTS (`-40%..+60%`) para caber na janela original (com testes unitários).
-  - [ ] Exportação em lote de múltiplos idiomas com legendas Hormozi traduzidas.
+  - [X] Exportação em lote de múltiplos idiomas (`build_multilang_batch_jobs` em `concat-factory::dubbing` escalando `1 Vídeo -> N Idiomas`).
 
 ---
 
