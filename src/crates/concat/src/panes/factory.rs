@@ -231,11 +231,33 @@ impl FactoryPane {
                                 "safe_zones" => {
                                     self.pipeline_config.pro.safe_zones = val == "true";
                                 }
+                                "viral_score" => {
+                                    self.pipeline_config.pro.ai.viral_score_clipping = val == "true";
+                                }
+                                "auto_reframe" => {
+                                    self.pipeline_config.pro.ai.auto_reframe_speaker = val == "true";
+                                }
+                                "text_editing" => {
+                                    self.pipeline_config.pro.ai.text_based_editing = val == "true";
+                                }
+                                "eye_contact" => {
+                                    self.pipeline_config.pro.ai.eye_contact_correction = val == "true";
+                                }
+                                "broll_emojis" => {
+                                    self.pipeline_config.pro.ai.contextual_broll_emojis = val == "true";
+                                }
+                                "studio_sound" => {
+                                    self.pipeline_config.pro.ai.ai_studio_sound = val == "true";
+                                }
                                 _ => {}
                             }
                         }
                     }
                     "export" => {
+                        if preset == "send_to_timeline" {
+                            self.last_status = "Projeto enviado da Fábrica para a Timeline principal do Concat.".into();
+                            return;
+                        }
                         if preset.contains('_') {
                             let plat = concat_factory::presets::PlatformPreset::from_str_loose(&preset);
                             self.pipeline_config.pro.apply_platform_preset(plat);

@@ -296,6 +296,9 @@ pub struct FactoryProConfig {
     pub color_grade: ColorGradeLut,
     pub auto_ducking: bool,
     pub safe_zones: bool,
+    /// Advanced AI enhancements (Viral Score, Auto-Reframe, Text Editing, Eye Contact, B-Roll/Emojis, Studio Sound).
+    #[serde(default)]
+    pub ai: crate::ai_enhancements::AiEnhancementsConfig,
 }
 
 impl Default for FactoryProConfig {
@@ -322,6 +325,7 @@ impl Default for FactoryProConfig {
             color_grade: ColorGradeLut::Natural,
             auto_ducking: true,
             safe_zones: false,
+            ai: crate::ai_enhancements::AiEnhancementsConfig::default(),
         }
     }
 }

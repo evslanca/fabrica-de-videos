@@ -7,6 +7,7 @@
 //! represent production stages (Scripting, Voice Synthesis, Stock Media Curation,
 //! Procedural SFX, Synchronized Captions, Anti-Reused Content Effects, and Timeline Assembly).
 
+pub mod ai_enhancements;
 pub mod batch;
 pub mod dubbing;
 pub mod exporter;

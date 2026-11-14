@@ -111,6 +111,12 @@ export component ProStudioModal inherits Rectangle {
     in-out property <string> color-grade: "natural";
     in-out property <bool> auto-ducking: true;
     in-out property <bool> safe-zones: false;
+    in-out property <bool> viral-score: true;
+    in-out property <bool> auto-reframe: true;
+    in-out property <bool> text-editing: true;
+    in-out property <bool> eye-contact: false;
+    in-out property <bool> broll-emojis: true;
+    in-out property <bool> studio-sound: true;
     in-out property <color> highlight-color: #3b82f6;
     in-out property <color> effects-color: #60a5fa;
     in-out property <color> caption-color: #93c5fd;
@@ -438,6 +444,63 @@ export component ProStudioModal inherits Rectangle {
                             PillOption { label: "LUT Teal & Orange"; active: root.color-grade == "teal_and_orange"; clicked => { root.color-grade = "teal_and_orange"; } }
                             PillOption { label: "Auto-Ducking -14 LUFS"; active: root.auto-ducking; clicked => { root.auto-ducking = !root.auto-ducking; } }
                             PillOption { label: "Safe Zones"; active: root.safe-zones; clicked => { root.safe-zones = !root.safe-zones; } }
+                        }
+
+                        // 6. IA AVANÇADA (OPUSCLIP · DESCRIPT · SUBMAGIC · CAPCUT)
+                        Text { text: "IA AVANÇADA — RECURSOS PRO DE CONCORRENTES"; color: #60a5fa; font-size: 10px; font-weight: 800; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: root.viral-score ? "✓ 🔥 Viral Score (0-100)" : "🔥 Viral Score (0-100)";
+                                tag1: "OpusClip"; tag2: "Gancho"; tag3: root.viral-score ? "ATIVO" : "OFF";
+                                desc: "Analisa o roteiro/vídeo e pontua o potencial viral de cada corte.";
+                                active: root.viral-score;
+                                clicked => { root.viral-score = !root.viral-score; root.apply-detail("viral_score", root.viral-score ? "true" : "false"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: root.auto-reframe ? "✓ 🎯 Auto-Reframe 9:16" : "🎯 Auto-Reframe 9:16";
+                                tag1: "OpusClip"; tag2: "Face Track"; tag3: root.auto-reframe ? "ATIVO" : "OFF";
+                                desc: "Rastreia quem está falando e centraliza o rosto no formato vertical.";
+                                active: root.auto-reframe;
+                                clicked => { root.auto-reframe = !root.auto-reframe; root.apply-detail("auto_reframe", root.auto-reframe ? "true" : "false"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: root.text-editing ? "✓ 📝 Edição por Texto" : "📝 Edição por Texto";
+                                tag1: "Descript"; tag2: "Sem Vícios"; tag3: root.text-editing ? "ATIVO" : "OFF";
+                                desc: "Remove vícios ('ééé', 'tipo', 'né') e corta pausas pela transcrição.";
+                                active: root.text-editing;
+                                clicked => { root.text-editing = !root.text-editing; root.apply-detail("text_editing", root.text-editing ? "true" : "false"); }
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: root.eye-contact ? "✓ 👁️ Eye Contact IA" : "👁️ Eye Contact IA";
+                                tag1: "Submagic"; tag2: "Teleprompter"; tag3: root.eye-contact ? "ATIVO" : "OFF";
+                                desc: "Corrige o olhar para manter contato visual direto com a câmera.";
+                                active: root.eye-contact;
+                                clicked => { root.eye-contact = !root.eye-contact; root.apply-detail("eye_contact", root.eye-contact ? "true" : "false"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: root.broll-emojis ? "✓ 🎬 B-Roll & Emojis" : "🎬 B-Roll & Emojis";
+                                tag1: "Submagic"; tag2: "Contextual"; tag3: root.broll-emojis ? "ATIVO" : "OFF";
+                                desc: "Insere B-Roll e emojis sincronizados nas palavras-chave faladas.";
+                                active: root.broll-emojis;
+                                clicked => { root.broll-emojis = !root.broll-emojis; root.apply-detail("broll_emojis", root.broll-emojis ? "true" : "false"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: root.studio-sound ? "✓ 🎙️ AI Studio Sound" : "🎙️ AI Studio Sound";
+                                tag1: "Descript"; tag2: "-14 LUFS"; tag3: root.studio-sound ? "ATIVO" : "OFF";
+                                desc: "Remove ruído de fundo e aplica EQ vocal com qualidade de estúdio.";
+                                active: root.studio-sound;
+                                clicked => { root.studio-sound = !root.studio-sound; root.apply-detail("studio_sound", root.studio-sound ? "true" : "false"); }
+                            }
                         }
                     }
                 }

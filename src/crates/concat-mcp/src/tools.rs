@@ -693,6 +693,12 @@ fn input_schema(schemas: &Schemas, tool: &Tool) -> Option<Value> {
                 "transitionStyle": { "type": "string", "enum": ["corte_seco", "whoosh_blur", "zoom_morph", "glitch_flash"], "default": "whoosh_blur" },
                 "colorGrade": { "type": "string", "enum": ["natural", "dark_cinema", "teal_and_orange", "crisp_tech"], "default": "natural" },
                 "autoDucking": { "type": "boolean", "default": true },
+                "viralScoreClipping": { "type": "boolean", "default": true },
+                "autoReframeSpeaker": { "type": "boolean", "default": true },
+                "textBasedEditing": { "type": "boolean", "default": true },
+                "eyeContactCorrection": { "type": "boolean", "default": false },
+                "contextualBrollEmojis": { "type": "boolean", "default": true },
+                "aiStudioSound": { "type": "boolean", "default": true },
                 "aspect": { "type": "string", "enum": ["16:9", "9:16"], "default": "16:9" },
                 "voiceStyle": { "type": "string", "enum": ["dark_narrator", "whisper_suspense", "epic_documentary", "urgent_news", "neutral"], "default": "dark_narrator" },
                 "musicMood": { "type": "string", "enum": ["dark_ambient", "phonk", "horror_drone", "epic_cinematic", "lofi_mystery", "synthwave_noir"], "default": "dark_ambient" },
@@ -1137,6 +1143,40 @@ fn factory_run(arguments: Value) -> Result<Outcome, ApiError> {
     if let Some(duck) = arguments["autoDucking"].as_bool() {
         cfg.pro.auto_ducking = duck;
     }
+    if let Some(v) = arguments["viralScoreClipping"].as_bool() {
+        cfg.pro.ai.viral_score_clipping = v;
+    }
+    if let Some(v) = arguments["autoReframeSpeaker"].as_bool() {
+        cfg.pro.ai.auto_reframe_speaker = v;
+    }
+    if let Some(v) = arguments["textBasedEditing"].as_bool() {
+        cfg.pro.ai.text_based_editing = v;
+    }
+    if let Some(v) = arguments["eyeContactCorrection"].as_bool() {
+        cfg.pro.ai.eye_contact_correction = v;
+    }
+    if let Some(v) = arguments["contextualBrollEmojis"].as_bool() {
+        cfg.pro.ai.contextual_broll_emojis = v;
+    }
+    if let Some(v) = arguments["aiStudioSound"].as_bool() {
+        cfg.pro.ai.ai_studio_sound = v;
+    }
+    let cleaned_script = if cfg.pro.ai.text_based_editing {
+        concat_factory::ai_enhancements::remove_filler_words(&script)
+    } else {
+        script.clone()
+    };
+    cfg.script.raw_script = cleaned_script.clone();
+    let viral_score = if cfg.pro.ai.viral_score_clipping {
+        Some(concat_factory::ai_enhancements::score_segment(&cleaned_script, 30.0))
+    } else {
+        None
+    };
+    let keyword_cues = if cfg.pro.ai.contextual_broll_emojis {
+        concat_factory::ai_enhancements::extract_keyword_cues(&cleaned_script)
+    } else {
+        vec![]
+    };
     if let Some(dir) = arguments["outputDir"].as_str().filter(|s| !s.is_empty()) {
         cfg.export.output_dir = std::path::PathBuf::from(dir);
     }
@@ -1156,6 +1196,8 @@ fn factory_run(arguments: Value) -> Result<Outcome, ApiError> {
         "exportedMp4": out.exported_mp4,
         "proConfig": cfg.pro,
         "orchestratorPlan": orchestrator_plan,
+        "viralScore": viral_score,
+        "keywordCues": keyword_cues,
     })))
 }
 
