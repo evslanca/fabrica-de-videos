@@ -751,4 +751,25 @@ mod probe {
             }
         }
     }
+
+    #[test]
+    fn enhance_voice_chain_filters_audio_cleanly() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/fixtures/tone-at-1s.ts");
+        let chain = "highpass=f=80,afftdn=nf=-37.0:nr=16.8,deesser=i=0.30,acompressor=threshold=0.32:ratio=3.2:attack=15:release=120,alimiter=limit=0.95".to_owned();
+        let options = AudioOptions {
+            start: Some(0.5),
+            duration: Some(1.0),
+            filters: vec![chain],
+            rate: 48_000,
+            channels: 2,
+            format: SampleFormat::I16,
+            ..AudioOptions::default()
+        };
+        let mut decoder = AudioDecoder::open(path, &options).expect("opens enhance-voice graph");
+        let mut bytes = 0usize;
+        while let Some(frame) = decoder.next_frame().expect("decodes with enhance-voice") {
+            bytes += decoder.bytes_of(&frame).len();
+        }
+        assert!(bytes > 0, "expected filtered audio bytes");
+    }
 }

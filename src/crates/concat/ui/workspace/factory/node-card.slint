@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Concat contributors
 
-import { Theme } from "../theme/theme.slint";
-import { StatusLed, LedState } from "./status-led.slint";
+import { Theme } from "../../theme/theme.slint";
+import { StatusLed, LedState } from "../../primitives/status-led.slint";
 
 // Factory node card: a draggable, self-contained stage of the pipeline.
 // Rendered on the Factory canvas and wired to other cards via bezier connectors.
@@ -20,12 +20,13 @@ export component FactoryNodeCard {
 
     callback run-pressed();
     callback card-clicked();
+    callback card-double-clicked();
     callback moved(length, length); // delta-x, delta-y
     callback input-port-clicked();
     callback output-port-clicked();
 
     width: 220px;
-    min-height: 90px;
+    height: 90px;
 
     // Outer selection ring
     Rectangle {
@@ -40,6 +41,39 @@ export component FactoryNodeCard {
             background: #1a1a1f;
             border-width: 1px;
             border-color: root.selected ? #3b82f6 : #333340;
+
+            // Drag & click surface sits behind interactive child buttons (e.g. run button).
+            TouchArea {
+                property <length> press-x;
+                property <length> press-y;
+                property <bool> has-dragged;
+                mouse-cursor: grab;
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down) {
+                        press-x = self.mouse-x;
+                        press-y = self.mouse-y;
+                        has-dragged = false;
+                    }
+                }
+                moved => {
+                    if (self.pressed) {
+                        if (Math.abs(self.mouse-x - press-x) > 3px || Math.abs(self.mouse-y - press-y) > 3px) {
+                            has-dragged = true;
+                        }
+                        if (has-dragged) {
+                            root.moved(self.mouse-x - press-x, self.mouse-y - press-y);
+                        }
+                    }
+                }
+                clicked => {
+                    if (!has-dragged) {
+                        root.card-clicked();
+                    }
+                }
+                double-clicked => {
+                    root.card-double-clicked();
+                }
+            }
 
             VerticalLayout {
                 padding: 10px;
@@ -111,23 +145,6 @@ export component FactoryNodeCard {
                         animate width { duration: 200ms; easing: ease-out; }
                     }
                 }
-            }
-
-            TouchArea {
-                property <length> press-x;
-                property <length> press-y;
-                pointer-event(event) => {
-                    if (event.kind == PointerEventKind.down) {
-                        press-x = self.mouse-x;
-                        press-y = self.mouse-y;
-                    }
-                }
-                moved => {
-                    if (self.pressed) {
-                        root.moved(self.mouse-x - press-x, self.mouse-y - press-y);
-                    }
-                }
-                clicked => { root.card-clicked(); }
             }
         }
 

@@ -245,11 +245,11 @@ export component Modal inherits Rectangle {
                 min-height: 0px;
                 vertical-stretch: 1;
                 interactive: content.preferred-height > self.height;
-                viewport-height: Math.max(self.height, content.preferred-height);
-
+                content-height: Math.max(self.height, content.preferred-height);
+                 
                 content := VerticalLayout {
                     width: scroller.width;
-                    height: scroller.viewport-height;
+                    height: scroller.content-height;
 
                     @children
                 }

@@ -79,6 +79,9 @@ pub enum Action {
     Mask,
     /// `preview.frame`, as an image.
     PreviewFrame,
+    /// Run the Dark Video Factory pipeline from a script.
+    FactoryRun,
+    FactoryAgents,
 }
 
 /// How a reply is shown to the agent.
@@ -494,6 +497,24 @@ pub fn catalogue() -> Vec<Tool> {
             idempotent: true,
             action: Action::PreviewFrame,
         },
+        Tool {
+            name: "factory_run",
+            title: "Run Dark Video Factory",
+            description: "Runs the automated Dark Video Factory pipeline from a narration `script`, generating voiceover, stock B-Roll selection, procedural BGM/SFX, captions, and optional MP4 export.",
+            read_only: false,
+            destructive: false,
+            idempotent: false,
+            action: Action::FactoryRun,
+        },
+        Tool {
+            name: "factory_agents",
+            title: "Manage Factory Robots (CRUD)",
+            description: "Full CRUD + smart organization for the AI Video Factory robots (Aria, Kael, Nova, Lyra, Kronos): list, create, update role/systemPrompt, delete, or organize_smart.",
+            read_only: false,
+            destructive: false,
+            idempotent: false,
+            action: Action::FactoryAgents,
+        },
     ]
 }
 
@@ -638,6 +659,62 @@ fn input_schema(schemas: &Schemas, tool: &Tool) -> Option<Value> {
             Some(schema)
         }
         Action::PreviewFrame => schemas.method("preview.frame"),
+        Action::FactoryRun => Some(json!({
+            "type": "object",
+            "properties": {
+                "script": { "type": "string", "description": "Narration script text (optional if `topic` is provided)." },
+                "topic": { "type": "string", "description": "Short topic to auto-generate a dark narration script when `script` is omitted." },
+                "productionType": {
+                    "type": "string",
+                    "enum": ["video_youtube", "reels_shorts", "filme_curta", "propaganda_comercial", "jingle_audio", "dublagem_clonagem", "avatar_apresentador"],
+                    "description": "Triggers the Multi-Agent Orchestrator (Aria, Kael, Lyra, Nova, Kronos) for the target production type."
+                },
+                "projectName": { "type": "string", "description": "Output project name." },
+                "platformPreset": {
+                    "type": "string",
+                    "enum": ["youtube_16x9", "youtube_shorts", "instagram_reels", "instagram_feed", "facebook_feed", "tiktok_viral", "linkedin_pro", "podcast_clip"],
+                    "description": "Pre-configured platform preset (auto-sets aspect ratio, pacing, captions, and safe zones)."
+                },
+                "editingStyle": {
+                    "type": "string",
+                    "enum": ["ilustrativa_pip", "lado_a_lado", "review_software", "zoom_dinamico", "apresentacao_animada", "automatico_mix"],
+                    "default": "automatico_mix"
+                },
+                "colorPalette": {
+                    "type": "string",
+                    "enum": ["azul_glass", "neon", "fogo", "dinheiro", "rosa_choque", "mono", "arco_iris"],
+                    "default": "azul_glass"
+                },
+                "highlightColor": { "type": "string", "description": "Hex color for titles and big numbers (e.g. #3B82F6)." },
+                "effectsColor": { "type": "string", "description": "Hex color for glows, lines, bars, and transitions." },
+                "captionColor": { "type": "string", "description": "Hex color for keyword highlights in captions." },
+                "motionRhythm": { "type": "string", "enum": ["suave", "medio", "agressivo"], "default": "medio" },
+                "captionMode": { "type": "string", "enum": ["palavra_por_palavra", "frase_curta", "so_palavras_chave", "sem_legenda"], "default": "palavra_por_palavra" },
+                "transitionStyle": { "type": "string", "enum": ["corte_seco", "whoosh_blur", "zoom_morph", "glitch_flash"], "default": "whoosh_blur" },
+                "colorGrade": { "type": "string", "enum": ["natural", "dark_cinema", "teal_and_orange", "crisp_tech"], "default": "natural" },
+                "autoDucking": { "type": "boolean", "default": true },
+                "aspect": { "type": "string", "enum": ["16:9", "9:16"], "default": "16:9" },
+                "voiceStyle": { "type": "string", "enum": ["dark_narrator", "whisper_suspense", "epic_documentary", "urgent_news", "neutral"], "default": "dark_narrator" },
+                "musicMood": { "type": "string", "enum": ["dark_ambient", "phonk", "horror_drone", "epic_cinematic", "lofi_mystery", "synthwave_noir"], "default": "dark_ambient" },
+                "outputDir": { "type": "string", "description": "Optional output directory path." },
+                "renderMp4": { "type": "boolean", "default": false }
+            }
+        })),
+        Action::FactoryAgents => Some(json!({
+            "type": "object",
+            "required": ["action"],
+            "properties": {
+                "action": { "type": "string", "enum": ["list", "create", "update", "delete", "organize"] },
+                "id": { "type": "string", "description": "Robot ID (e.g. aria, kael, nova, lyra, kronos)." },
+                "name": { "type": "string" },
+                "role": { "type": "string" },
+                "systemPrompt": { "type": "string", "description": "Editable command prompt for the robot." },
+                "targetNode": { "type": "string", "enum": ["script", "voice", "media", "avatar", "music", "sfx", "caption", "export"] },
+                "priority": { "type": "integer" },
+                "enabled": { "type": "boolean" },
+                "registryPath": { "type": "string", "description": "Optional JSON file path to persist robot changes." }
+            }
+        })),
         Action::Mask => {
             let update = schemas.command("updateClip")?;
             let mut masks = update
@@ -748,6 +825,8 @@ fn run(tool: &Tool, arguments: Value, context: Context<'_>) -> Result<Outcome, A
         }
         Action::ExportWait => export_wait(arguments, backend, context.cancelled, context.progress),
         Action::PreviewFrame => preview(arguments, backend),
+        Action::FactoryRun => factory_run(arguments),
+        Action::FactoryAgents => factory_agents(arguments),
         Action::Mask => {
             let result = backend.call(mask(arguments)?)?;
             Ok(Outcome::json(summary::view(&result)))
@@ -920,6 +999,227 @@ fn export_wait(
 }
 
 /// `preview_frame`: the picture as an image, or the file written.
+fn factory_run(arguments: Value) -> Result<Outcome, ApiError> {
+    let raw_script = arguments["script"]
+        .as_str()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+    let topic = arguments["topic"]
+        .as_str()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    let script = match (raw_script, topic) {
+        (Some(s), _) => s,
+        (None, Some(t)) => format!(
+            "Poucas pessoas sabem a verdade oculta por trás de {t}.\n\
+             Documentos e relatos recentes revelam detalhes que mudam tudo o que você imaginava.\n\
+             Fique até o final para descobrir o que realmente aconteceu com {t}."
+        ),
+        (None, None) => {
+            return Err(ApiError::new(
+                ErrorCode::Invalid,
+                "missing or empty `script` (or provide `topic`)",
+            ));
+        }
+    };
+
+    let mut cfg = concat_factory::pipeline::FactoryPipelineConfig::default();
+    cfg.script.raw_script = script.clone();
+    if let Some(name) = arguments["projectName"].as_str().filter(|s| !s.is_empty()) {
+        cfg.export.project_name = name.to_string();
+    }
+    if arguments["aspect"].as_str() == Some("9:16") {
+        cfg.export.aspect = concat_factory::VideoAspect::Vertical9x16;
+    }
+    if let Some(voice) = arguments["voiceStyle"].as_str() {
+        use concat_factory::nodes::voice_node::VoiceStyle;
+        cfg.voice.design.style = match voice {
+            "whisper_suspense" => VoiceStyle::WhisperSuspense,
+            "epic_documentary" => VoiceStyle::EpicDocumentary,
+            "urgent_news" => VoiceStyle::UrgentNews,
+            "neutral" => VoiceStyle::Neutral,
+            _ => VoiceStyle::DarkNarrator,
+        };
+    }
+    if let Some(mood) = arguments["musicMood"].as_str() {
+        use concat_factory::nodes::music_node::MusicGenre;
+        cfg.music.genre = match mood {
+            "phonk" => MusicGenre::Phonk,
+            "horror_drone" => MusicGenre::HorrorDrone,
+            "epic_cinematic" => MusicGenre::EpicCinematic,
+            "lofi_mystery" => MusicGenre::LoFiMystery,
+            "synthwave_noir" => MusicGenre::SynthwaveNoir,
+            _ => MusicGenre::DarkAmbient,
+        };
+    }
+    let orchestrator_plan = arguments["productionType"].as_str().map(|pt| {
+        use concat_factory::orchestrator::{build_plan, ProductionType};
+        let ptype = match pt {
+            "reels_shorts" => ProductionType::ReelsShorts,
+            "filme_curta" => ProductionType::FilmeCurta,
+            "propaganda_comercial" => ProductionType::PropagandaComercial,
+            "jingle_audio" => ProductionType::JingleAudio,
+            "dublagem_clonagem" => ProductionType::DublagemClonagem,
+            "avatar_apresentador" => ProductionType::AvatarApresentador,
+            _ => ProductionType::VideoYoutube,
+        };
+        let plan = build_plan(&script, ptype);
+        cfg.pro = plan.recommended_pro.clone();
+        plan
+    });
+
+    if let Some(preset_str) = arguments["platformPreset"].as_str() {
+        let preset = concat_factory::presets::PlatformPreset::from_str_loose(preset_str);
+        cfg.pro.apply_platform_preset(preset);
+        cfg.export.aspect = if preset.is_vertical() {
+            concat_factory::VideoAspect::Vertical9x16
+        } else {
+            concat_factory::VideoAspect::YouTube16x9
+        };
+    }
+    if let Some(style_str) = arguments["editingStyle"].as_str() {
+        cfg.pro.editing_style = concat_factory::presets::EditingStyle::from_str_loose(style_str);
+    }
+    if let Some(pal_str) = arguments["colorPalette"].as_str() {
+        let pal = concat_factory::presets::ColorPalette::from_str_loose(pal_str);
+        cfg.pro.color_palette = pal;
+        let (h, e, c) = pal.colors();
+        cfg.pro.highlight_color = h.to_string();
+        cfg.pro.effects_color = e.to_string();
+        cfg.pro.caption_color = c.to_string();
+    }
+    if let Some(h) = arguments["highlightColor"].as_str().filter(|s| !s.is_empty()) {
+        cfg.pro.highlight_color = h.to_string();
+    }
+    if let Some(e) = arguments["effectsColor"].as_str().filter(|s| !s.is_empty()) {
+        cfg.pro.effects_color = e.to_string();
+    }
+    if let Some(c) = arguments["captionColor"].as_str().filter(|s| !s.is_empty()) {
+        cfg.pro.caption_color = c.to_string();
+    }
+    if let Some(rhythm) = arguments["motionRhythm"].as_str() {
+        use concat_factory::presets::MotionRhythm;
+        cfg.pro.motion_rhythm = match rhythm {
+            "suave" => MotionRhythm::Suave,
+            "agressivo" => MotionRhythm::Agressivo,
+            _ => MotionRhythm::Medio,
+        };
+    }
+    if let Some(cap) = arguments["captionMode"].as_str() {
+        use concat_factory::presets::CaptionMode;
+        cfg.pro.caption_mode = match cap {
+            "frase_curta" => CaptionMode::FraseCurta,
+            "so_palavras_chave" => CaptionMode::SoPalavrasChave,
+            "sem_legenda" => CaptionMode::SemLegenda,
+            _ => CaptionMode::PalavraPorPalavra,
+        };
+    }
+    if let Some(tr) = arguments["transitionStyle"].as_str() {
+        use concat_factory::presets::TransitionStyle;
+        cfg.pro.transition_style = match tr {
+            "corte_seco" => TransitionStyle::CorteSeco,
+            "zoom_morph" => TransitionStyle::ZoomMorph,
+            "glitch_flash" => TransitionStyle::GlitchFlash,
+            _ => TransitionStyle::WhooshBlur,
+        };
+    }
+    if let Some(lut) = arguments["colorGrade"].as_str() {
+        use concat_factory::presets::ColorGradeLut;
+        cfg.pro.color_grade = match lut {
+            "dark_cinema" => ColorGradeLut::DarkCinema,
+            "teal_and_orange" => ColorGradeLut::TealAndOrange,
+            "crisp_tech" => ColorGradeLut::CrispTech,
+            _ => ColorGradeLut::Natural,
+        };
+    }
+    if let Some(duck) = arguments["autoDucking"].as_bool() {
+        cfg.pro.auto_ducking = duck;
+    }
+    if let Some(dir) = arguments["outputDir"].as_str().filter(|s| !s.is_empty()) {
+        cfg.export.output_dir = std::path::PathBuf::from(dir);
+    }
+    if let Some(render) = arguments["renderMp4"].as_bool() {
+        cfg.export.render_mp4 = render;
+    }
+
+    let out = concat_factory::pipeline::run_pipeline(&mut cfg, |_, _, _| {})
+        .map_err(|e| ApiError::new(ErrorCode::Refused, e.to_string()))?;
+
+    Ok(Outcome::json(json!({
+        "projectName": cfg.export.project_name,
+        "scriptUsed": script,
+        "scenes": out.assembled.scenes.len(),
+        "durationSeconds": out.assembled.total_duration_seconds,
+        "voiceAudio": out.voice_result.audio_path,
+        "exportedMp4": out.exported_mp4,
+        "proConfig": cfg.pro,
+        "orchestratorPlan": orchestrator_plan,
+    })))
+}
+
+fn factory_agents(arguments: Value) -> Result<Outcome, ApiError> {
+    use concat_factory::orchestrator::{AgentProfile, AgentRegistry};
+    let path = arguments["registryPath"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+        .map(std::path::PathBuf::from);
+
+    let mut registry = match &path {
+        Some(p) => AgentRegistry::load_or_default(p),
+        None => AgentRegistry::default(),
+    };
+
+    let action = arguments["action"].as_str().unwrap_or("list");
+    match action {
+        "create" => {
+            let id = arguments["id"].as_str().unwrap_or("custom_bot").to_string();
+            let profile = AgentProfile {
+                id: id.clone(),
+                name: arguments["name"].as_str().unwrap_or(&id).to_string(),
+                role: arguments["role"].as_str().unwrap_or("Assistente IA").to_string(),
+                system_prompt: arguments["systemPrompt"].as_str().unwrap_or("").to_string(),
+                responsibilities: vec![],
+                target_node: arguments["targetNode"].as_str().unwrap_or("script").to_string(),
+                priority: arguments["priority"].as_u64().unwrap_or(50) as u32,
+                enabled: arguments["enabled"].as_bool().unwrap_or(true),
+            };
+            registry.create(profile);
+        }
+        "update" => {
+            let id = arguments["id"].as_str().unwrap_or("");
+            registry.update(
+                id,
+                arguments["name"].as_str().map(String::from),
+                arguments["role"].as_str().map(String::from),
+                arguments["systemPrompt"].as_str().map(String::from),
+                arguments["targetNode"].as_str().map(String::from),
+                arguments["priority"].as_u64().map(|v| v as u32),
+                arguments["enabled"].as_bool(),
+            );
+        }
+        "delete" => {
+            let id = arguments["id"].as_str().unwrap_or("");
+            registry.delete(id);
+        }
+        "organize" => {
+            registry.organize_smart();
+        }
+        _ => {}
+    }
+
+    if let Some(p) = &path {
+        let _ = registry.save(p);
+    }
+
+    Ok(Outcome::json(json!({
+        "action": action,
+        "count": registry.agents.len(),
+        "agents": registry.agents,
+    })))
+}
+
 fn preview(mut arguments: Value, backend: &mut dyn Backend) -> Result<Outcome, ApiError> {
     let wants_file = arguments
         .get("output")
@@ -1115,6 +1415,10 @@ mod tests {
                 "preview_frame",
                 json!({ "path": "/tmp/Cut", "time": 1.5, "width": 320, "height": 180 }),
             ),
+            (
+                "factory_run",
+                json!({ "script": "O oceano guarda segredos antigos.", "aspect": "16:9", "renderMp4": false }),
+            ),
         ]
     }
 
@@ -1169,6 +1473,7 @@ mod tests {
                     request("export.status", sample)
                 }
                 Action::PreviewFrame => request("preview.frame", sample.clone()),
+                Action::FactoryRun | Action::FactoryAgents => continue,
                 Action::Mask => mask(sample.clone()),
             };
             let built = built.unwrap_or_else(|error| panic!("{name}: {error}"));

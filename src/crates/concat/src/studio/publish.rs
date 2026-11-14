@@ -55,18 +55,23 @@ impl Studio {
         let factory_ui = app.global::<crate::ui::FactoryData>();
         factory_ui.set_aspect_16_9(self.factory.aspect_16_9);
         factory_ui.set_batch_running(self.factory.batch_running);
+        factory_ui.set_fabricating(self.factory.fabricating);
+        factory_ui.set_status_text(self.factory.last_status.as_str().into());
 
         let selected_id = self.factory.selected_node_id.as_deref().unwrap_or("");
         factory_ui.set_selected_node_id(selected_id.into());
+        factory_ui.set_selected_node_kind(selected_id.into());
 
         let nodes = factory_ui.get_nodes();
+        let mut node_indices = std::collections::HashMap::new();
         for i in 0..nodes.row_count() {
             if let Some(mut row) = nodes.row_data(i) {
-                let id = row.id.as_str();
+                let id = row.id.as_str().to_string();
+                node_indices.insert(id.clone(), i as i32);
                 let progress = self
                     .factory
                     .node_progress
-                    .get(id)
+                    .get(id.as_str())
                     .copied()
                     .unwrap_or(0.0);
                 let status = if progress >= 1.0 {
@@ -77,6 +82,8 @@ impl Studio {
                     } else {
                         crate::ui::LedState::Working
                     }
+                } else if progress > 0.0 {
+                    crate::ui::LedState::Working
                 } else if self.factory.fabricating {
                     crate::ui::LedState::Ready
                 } else {
@@ -91,6 +98,53 @@ impl Studio {
                 nodes.set_row_data(i, row);
             }
         }
+
+        let wires: Vec<crate::ui::WireConnection> = self
+            .factory
+            .custom_wires
+            .iter()
+            .filter_map(|(from, to)| {
+                let from_idx = *node_indices.get(from)?;
+                let to_idx = *node_indices.get(to)?;
+                let active = self.factory.fabricating
+                    || self.factory.node_progress.get(from).copied().unwrap_or(0.0) >= 1.0;
+                Some(crate::ui::WireConnection {
+                    from_idx,
+                    to_idx,
+                    active,
+                })
+            })
+            .collect();
+        factory_ui.set_wires(slint::ModelRc::new(slint::VecModel::from(wires)));
+
+        let batch_items: Vec<crate::ui::BatchQueueItem> = self
+            .factory
+            .batch_items
+            .iter()
+            .map(|item| {
+                let status = if item.failed {
+                    crate::ui::LedState::Error
+                } else if item.done {
+                    crate::ui::LedState::Success
+                } else if item.progress > 0.0 {
+                    crate::ui::LedState::Working
+                } else {
+                    crate::ui::LedState::Off
+                };
+                crate::ui::BatchQueueItem {
+                    id: item.id.as_str().into(),
+                    topic: item.topic.as_str().into(),
+                    phase: item.phase.as_str().into(),
+                    progress: item.progress,
+                    status,
+                }
+            })
+            .collect();
+        let completed = self.factory.batch_items.iter().filter(|i| i.done).count() as i32;
+        let total = self.factory.batch_items.len() as i32;
+        factory_ui.set_batch_items(slint::ModelRc::new(slint::VecModel::from(batch_items)));
+        factory_ui.set_batch_completed(completed);
+        factory_ui.set_batch_total(total);
     }
 
     /// The project's saved state and the toast, and nothing else: what a

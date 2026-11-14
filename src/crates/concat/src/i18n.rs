@@ -51,6 +51,10 @@ pub struct Language {
 /// The code the interface starts in, and the language of the keys.
 pub const ENGLISH: &str = "en";
 
+/// The language the interface starts in when the person has not chosen
+/// one: Brazilian Portuguese. A key it lacks still reads in English.
+pub const DEFAULT_LOCALE: &str = "pt-BR";
+
 /// The locales the app ships, as `(code, file)`. `en.json` is the
 /// inventory - every key, with its English - which is what a translator
 /// starts a new file from, and what every language falls back to.

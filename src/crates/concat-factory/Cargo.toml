@@ -12,7 +12,7 @@ concat-core.workspace = true
 concat-project.workspace = true
 concat-export.workspace = true
 concat-media.workspace = true
-concat-speech.workspace = true
+concat-speech = { workspace = true, features = ["isolate"] }
 concat-effects.workspace = true
 concat-host.workspace = true
 

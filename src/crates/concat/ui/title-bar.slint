@@ -128,11 +128,13 @@ export component TitleBar inherits Rectangle {
     /// The window is maximised, so the middle button restores rather than
     /// maximises and shows the two-squares glyph.
     in property <bool> maximized;
+    in property <bool> factory-mode: false;
 
     callback begin-drag();
     callback toggle-maximize();
     callback minimize();
     callback close();
+    callback toggle-factory();
     /// A menu was asked for: which one, and where its label sits in the strip,
     /// so the sheet can hang off it.
     callback menu-opened(index: int, at-x: length, keyboard: bool);
@@ -253,6 +255,34 @@ export component TitleBar inherits Rectangle {
         // it through. A seat's own corner button changes or closes that seat;
         // this is the only place a seat can be brought into existence, which
         // is why it lives on the window and not in a pane.
+        if !root.minimal: VerticalLayout {
+            alignment: center;
+            padding-right: 4px;
+
+            factory-pill := Rectangle {
+                width: fp-label.width + 18px;
+                height: 22px;
+                border-radius: Theme.r-sm;
+                background: root.factory-mode ? #7c3aed : (fp-touch.has-hover ? Theme.field-hover : Theme.field);
+                border-width: 1px;
+                border-color: root.factory-mode ? #8b5cf6 : Theme.field-active;
+
+                fp-label := Text {
+                    text: root.factory-mode ? "← Editor" : "⚡ Fábrica Dark";
+                    color: root.factory-mode ? #ffffff : Theme.fg;
+                    font-size: Theme.fs-sm;
+                    font-weight: Theme.weight-title;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                fp-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.toggle-factory(); }
+                }
+            }
+        }
+
         if !root.minimal: VerticalLayout {
             alignment: center;
             AddPaneButton {

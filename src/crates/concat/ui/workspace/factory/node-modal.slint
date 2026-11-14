@@ -1,0 +1,432 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { StatusLed, LedState } from "../../primitives/status-led.slint";
+import { FactoryNodeRow, WireConnection } from "./wire-renderer.slint";
+
+// Modal opened on double-click of a FactoryNodeCard.
+// Shows incoming/outgoing wire connections, node-specific presets/options,
+// and quick actions (Test node, Focus on canvas, Close).
+
+export component NodeConfigModal inherits Rectangle {
+    in property <string> node-id;
+    in property <string> node-title;
+    in property <string> node-subtitle;
+    in property <LedState> node-status;
+    in property <float> node-progress;
+    in property <[FactoryNodeRow]> nodes;
+    in property <[WireConnection]> wires;
+
+    callback close();
+    callback test-node(string);
+    callback focus-node(string);
+    callback select-connected(string);
+    callback apply-preset(string, string); // node-id, new-subtitle
+    callback toggle-wire(int); // wire index
+
+    // Dark backdrop overlay
+    background: #050508.with-alpha(0.72);
+
+    // Clicking backdrop closes modal
+    TouchArea {
+        clicked => { root.close(); }
+    }
+
+    // Centered dialog card
+    Rectangle {
+        width: 440px;
+        height: 430px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        border-radius: 12px;
+        background: #14141b;
+        border-width: 1px;
+        border-color: #3b82f6.with-alpha(0.65);
+
+        // Swallow clicks inside modal so backdrop doesn't close it
+        TouchArea {}
+
+        VerticalLayout {
+            padding: 16px;
+            spacing: 12px;
+
+            // ── Header ──
+            HorizontalLayout {
+                alignment: space-between;
+                spacing: 8px;
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    StatusLed { state: root.node-status; size: 10px; }
+                    VerticalLayout {
+                        spacing: 2px;
+                        Text {
+                            text: root.node-title;
+                            font-size: 15px;
+                            font-weight: 700;
+                            color: #f1f5f9;
+                        }
+                        Text {
+                            text: "Nó: " + root.node-id + " · " + root.node-subtitle;
+                            font-size: 11px;
+                            color: #94a3b8;
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: 6px;
+                    background: close-ta.has-hover ? #2a2a38 : #1e1e28;
+                    border-width: 1px;
+                    border-color: #333344;
+                    Text {
+                        text: "✕";
+                        font-size: 12px;
+                        color: #cbd5e1;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    close-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.close(); }
+                    }
+                }
+            }
+
+            Rectangle { height: 1px; background: #262632; }
+
+            // ── Node-specific resources / presets ──
+            Text {
+                text: "Recursos e Configuração do Nó";
+                font-size: 11px;
+                font-weight: 700;
+                color: #93c5fd;
+            }
+
+            Rectangle {
+                border-radius: 8px;
+                background: #101016;
+                border-width: 1px;
+                border-color: #252532;
+                vertical-stretch: 1;
+
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 8px;
+
+                    if root.node-id == "script" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Estilo do Roteiro IA:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["Suspense Dark · Hook + 5 cenas", "Documentário Épico · 8 cenas", "Notícia Urgente · Ritmo rápido", "Mistério Lo-Fi · Narração curta"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-s.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-s := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+
+                    if root.node-id == "voice" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Motor & Timbre Vocal:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["Edge-TTS · Narrador Dark", "Chatterbox ONNX · Clonagem", "Cloud TTS HD · Sussurro", "Edge-TTS · Documentário Épico"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-v.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-v := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+
+                    if root.node-id == "media" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Fonte & Colorização Dark:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["Pexels · Ken Burns · Noir", "Pixabay · Teal & Orange", "Stock + Horror Desaturado", "Golden Stoic · B-Roll 4K"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-m.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-m := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+
+                    if root.node-id == "music" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Trilha Sonora IA:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["Dark Ambient · Sem Voz (BGM)", "Phonk · Batida Pesada", "Horror Drone · Tensão", "Synthwave Noir · Com Voz"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-mu.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-mu := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+
+                    if root.node-id == "sfx" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Mixagem & Efeitos Sonoros:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["Whoosh · Riser · Auto-Ducking", "Ducking -18dB + Realce Voz", "Impacto Dark + Limiter", "Mix Limpo Broadcast -14 LUFS"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-sx.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-sx := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+
+                    if root.node-id == "caption" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Estilo de Legendas:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["Hormozi · Safe Zone · Palavras", "Destaque Amarelo · Palavra", "Minimalista Dark · Frase", "Karaokê Neon · Shorts"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-c.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-c := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+
+                    if root.node-id == "export" : VerticalLayout {
+                        spacing: 6px;
+                        Text { text: "Perfil de Exportação:"; font-size: 11px; color: #9ca3af; }
+                        for opt in ["16:9 YouTube · 1080p 30fps", "9:16 Shorts · 1080p 60fps", "16:9 Master · 4K H.265", "9:16 Reels · Alto Bitrate"] : Rectangle {
+                            height: 28px;
+                            border-radius: 5px;
+                            background: root.node-subtitle == opt ? #1e3a8a : (opt-ta-e.has-hover ? #1e1e29 : #171720);
+                            border-width: 1px;
+                            border-color: root.node-subtitle == opt ? #3b82f6 : #2a2a36;
+                            Text {
+                                x: 10px;
+                                text: (root.node-subtitle == opt ? "✓ " : "") + opt;
+                                font-size: 11px;
+                                color: #e2e8f0;
+                                vertical-alignment: center;
+                            }
+                            opt-ta-e := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { root.apply-preset(root.node-id, opt); }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Connected wires summary (De onde vem / Para onde vai) ──
+            Text {
+                text: "Conexões Ativas (clique para ativar/desativar fio):";
+                font-size: 11px;
+                font-weight: 700;
+                color: #cbd5e1;
+            }
+
+            HorizontalLayout {
+                spacing: 6px;
+                height: 68px;
+
+                // Incoming
+                Rectangle {
+                    horizontal-stretch: 1;
+                    border-radius: 6px;
+                    background: #101016;
+                    border-width: 1px;
+                    border-color: #f59e0b.with-alpha(0.35);
+                    clip: true;
+
+                    VerticalLayout {
+                        padding: 6px;
+                        spacing: 3px;
+                        Text { text: "⬅ Vem de:"; font-size: 10px; font-weight: 700; color: #f59e0b; }
+                        for w[idx] in root.wires : HorizontalLayout {
+                            if root.nodes[w.to-idx].id == root.node-id : Rectangle {
+                                height: 18px;
+                                border-radius: 4px;
+                                background: w.active ? #f59e0b.with-alpha(0.18) : #1c1c26;
+                                Text {
+                                    x: 6px;
+                                    text: (w.active ? "● " : "○ ") + root.nodes[w.from-idx].title;
+                                    font-size: 10px;
+                                    color: w.active ? #fde68a : #94a3b8;
+                                    vertical-alignment: center;
+                                }
+                                TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => { root.toggle-wire(idx); }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Outgoing
+                Rectangle {
+                    horizontal-stretch: 1;
+                    border-radius: 6px;
+                    background: #101016;
+                    border-width: 1px;
+                    border-color: #38bdf8.with-alpha(0.35);
+                    clip: true;
+
+                    VerticalLayout {
+                        padding: 6px;
+                        spacing: 3px;
+                        Text { text: "➡ Vai para:"; font-size: 10px; font-weight: 700; color: #38bdf8; }
+                        for w[idx] in root.wires : HorizontalLayout {
+                            if root.nodes[w.from-idx].id == root.node-id : Rectangle {
+                                height: 18px;
+                                border-radius: 4px;
+                                background: w.active ? #38bdf8.with-alpha(0.18) : #1c1c26;
+                                Text {
+                                    x: 6px;
+                                    text: (w.active ? "● " : "○ ") + root.nodes[w.to-idx].title;
+                                    font-size: 10px;
+                                    color: w.active ? #bae6fd : #94a3b8;
+                                    vertical-alignment: center;
+                                }
+                                TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => { root.toggle-wire(idx); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Action bar ──
+            HorizontalLayout {
+                spacing: 8px;
+
+                Rectangle {
+                    height: 32px;
+                    horizontal-stretch: 1;
+                    border-radius: 6px;
+                    background: test-ta.has-hover ? #252532 : #1c1c26;
+                    border-width: 1px;
+                    border-color: #3b3b4e;
+                    Text {
+                        text: "▶ Testar Nó";
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #e2e8f0;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    test-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.test-node(root.node-id); }
+                    }
+                }
+
+                Rectangle {
+                    height: 32px;
+                    horizontal-stretch: 1;
+                    border-radius: 6px;
+                    background: focus-ta.has-hover ? #252532 : #1c1c26;
+                    border-width: 1px;
+                    border-color: #3b3b4e;
+                    Text {
+                        text: "🎯 Focar Nó";
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #cbd5e1;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    focus-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.focus-node(root.node-id); }
+                    }
+                }
+
+                Rectangle {
+                    height: 32px;
+                    horizontal-stretch: 1;
+                    border-radius: 6px;
+                    background: ok-ta.has-hover ? #2563eb : #1d4ed8;
+                    border-width: 1px;
+                    border-color: #3b82f6;
+                    Text {
+                        text: "✓ Concluir";
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #ffffff;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    ok-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.close(); }
+                    }
+                }
+            }
+        }
+    }
+}

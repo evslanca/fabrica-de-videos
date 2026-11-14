@@ -113,7 +113,7 @@ fn main() {
         // The file's name and description as Windows shows them in its
         // properties, and as code signing checks them: "Concat" in every
         // build, where the default would be the crate's lower-case name.
-        winresource::WindowsResource::new()
+        if let Err(err) = winresource::WindowsResource::new()
             .set_icon(icon)
             .set("ProductName", "Concat")
             .set("FileDescription", "Concat")
@@ -122,7 +122,9 @@ fn main() {
                 "Copyright 2026 Jareer Abdullah, AGPL-3.0-or-later",
             )
             .compile()
-            .expect("could not embed the Windows icon");
+        {
+            println!("cargo:warning=could not embed the Windows icon: {err}");
+        }
     }
 
     // Three facts about the build that the built thing cannot ask for at run

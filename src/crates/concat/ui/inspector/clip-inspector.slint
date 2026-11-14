@@ -868,11 +868,16 @@ component Processor inherits VerticalLayout {
     padding-bottom: 6px;
     spacing: 4px;
 
-    SwitchRow {
+    row := SwitchRow {
         label: root.label;
         checked: root.on;
-        toggled(value) => { root.toggled(); }
+        toggled(value) => {
+            self.checked = root.on;
+            root.toggled();
+        }
     }
+
+    changed on => { row.checked = root.on; }
 
     // Under the switch and inside its padding, so the sentence reads as this
     // row's own rather than as a note about the section.

@@ -28,7 +28,7 @@ libc = "0.2"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
-ureq = "2"
+ureq = { version = "2", features = ["json"] }
 # SVG, drawn into a PNG FFmpeg can read; see svg.rs. The version Slint
 # already brings in, so nothing new is built.
 resvg = "0.48"

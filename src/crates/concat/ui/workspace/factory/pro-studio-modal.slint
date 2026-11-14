@@ -1,0 +1,447 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 Concat contributors
+
+import { ScrollView } from "std-widgets.slint";
+
+component PillOption inherits Rectangle {
+    in property <string> label;
+    in property <bool> active: false;
+    callback clicked();
+
+    height: 28px;
+    border-radius: 14px;
+    background: active ? #1d4ed8 : (touch.has-hover ? #1e293b : #0f172a);
+    border-width: 1px;
+    border-color: active ? #60a5fa : #334155;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: center;
+        Text {
+            text: root.active ? ("✓ " + root.label) : root.label;
+            color: root.active ? #ffffff : #cbd5e1;
+            font-size: 11px;
+            font-weight: root.active ? 700 : 500;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component StyleCard inherits Rectangle {
+    in property <string> title;
+    in property <string> tag1;
+    in property <string> tag2;
+    in property <string> tag3;
+    in property <string> desc;
+    in property <bool> active: false;
+    callback clicked();
+
+    height: 126px;
+    border-radius: 10px;
+    background: active ? #0f2544 : (touch.has-hover ? #111c33 : #0b1220);
+    border-width: active ? 2px : 1px;
+    border-color: active ? #3b82f6 : #1e293b;
+
+    VerticalLayout {
+        padding: 10px;
+        spacing: 5px;
+
+        Text {
+            text: root.title;
+            color: #f8fafc;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            for t in [root.tag1, root.tag2, root.tag3] : Rectangle {
+                height: 18px;
+                border-radius: 4px;
+                background: #1e293b;
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    Text {
+                        text: t;
+                        color: #93c5fd;
+                        font-size: 9px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: root.desc;
+            color: #94a3b8;
+            font-size: 10px;
+            wrap: word-wrap;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component ProStudioModal inherits Rectangle {
+    in-out property <bool> open: false;
+    in-out property <string> platform-preset: "youtube_16x9";
+    in-out property <string> editing-style: "automatico_mix";
+    in-out property <string> color-palette: "azul_glass";
+    in-out property <string> background-mode: "escuro_trocando";
+    in-out property <string> motion-rhythm: "medio";
+    in-out property <string> caption-mode: "palavra_por_palavra";
+    in-out property <string> cut-mode: "cortar_pausas_erros";
+    in-out property <string> sfx-level: "baixo";
+    in-out property <string> music-mode: "sem_musica";
+    in-out property <string> logo-style: "logos_3d_reais";
+    in-out property <string> render-engine: "eu_decido";
+    in-out property <string> hook-mode: "gancho_forte_titulo";
+    in-out property <string> transition-style: "whoosh_blur";
+    in-out property <string> color-grade: "natural";
+    in-out property <bool> auto-ducking: true;
+    in-out property <bool> safe-zones: false;
+    in-out property <color> highlight-color: #3b82f6;
+    in-out property <color> effects-color: #60a5fa;
+    in-out property <color> caption-color: #93c5fd;
+
+    callback apply-platform(string);
+    callback apply-style(string);
+    callback apply-palette(string);
+    callback apply-detail(string, string);
+    callback close();
+
+    if root.open : Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #020617cc;
+
+        TouchArea {
+            clicked => { root.close(); }
+        }
+
+        Rectangle {
+            width: Math.min(parent.width - 32px, 860px);
+            height: Math.min(parent.height - 32px, 640px);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            border-radius: 14px;
+            background: #070d19;
+            border-width: 1px;
+            border-color: #1e3a8a;
+
+            TouchArea {}
+
+            VerticalLayout {
+                padding: 16px;
+                spacing: 12px;
+
+                // Header
+                HorizontalLayout {
+                    alignment: space-between;
+                    VerticalLayout {
+                        spacing: 2px;
+                        Text {
+                            text: "ESTÚDIO PRO — PRESETS, ESTILO & CORES";
+                            color: #60a5fa;
+                            font-size: 13px;
+                            font-weight: 800;
+                        }
+                        Text {
+                            text: "Configure plataforma, estilo visual, paleta de cores, ritmo e acabamento profissional";
+                            color: #94a3b8;
+                            font-size: 11px;
+                        }
+                    }
+                    PillOption {
+                        label: "Fechar ✕";
+                        active: false;
+                        clicked => { root.close(); }
+                    }
+                }
+
+                ScrollView {
+                    vertical-stretch: 1;
+                    VerticalLayout {
+                        spacing: 14px;
+                        padding-right: 8px;
+
+                        // 0. ORCHESTRATOR MULTI-AGENTE
+                        Text { text: "ORCHESTRATOR — EQUIPE DE AGENTES IA"; color: #60a5fa; font-size: 10px; font-weight: 800; }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            for agent in [
+                                { name: "Aria", role: "Roteiro & Gancho" },
+                                { name: "Kael", role: "Voz, Dublagem & Clonagem" },
+                                { name: "Lyra", role: "Jingles, Música & SFX" },
+                                { name: "Nova", role: "Avatares & B-Roll" },
+                                { name: "Kronos", role: "Edição, Cor & Export" },
+                            ] : Rectangle {
+                                horizontal-stretch: 1;
+                                height: 46px;
+                                border-radius: 8px;
+                                background: #0f172a;
+                                border-width: 1px;
+                                border-color: #1e3a8a;
+                                VerticalLayout {
+                                    padding: 6px;
+                                    spacing: 2px;
+                                    Text { text: "🤖 " + agent.name; color: #f8fafc; font-size: 11px; font-weight: 700; }
+                                    Text { text: agent.role; color: #93c5fd; font-size: 9px; }
+                                }
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            PillOption { label: "Vídeo YouTube"; active: root.platform-preset == "youtube_16x9"; clicked => { root.platform-preset = "youtube_16x9"; root.apply-platform("youtube_16x9"); } }
+                            PillOption { label: "Propaganda"; active: root.editing-style == "zoom_dinamico"; clicked => { root.editing-style = "zoom_dinamico"; root.apply-style("zoom_dinamico"); } }
+                            PillOption { label: "Filme / Curta"; active: root.color-grade == "dark_cinema"; clicked => { root.color-grade = "dark_cinema"; root.apply-detail("color_grade", "dark_cinema"); } }
+                            PillOption { label: "Jingle / Áudio"; active: root.music-mode == "musica_dinamica"; clicked => { root.music-mode = "musica_dinamica"; root.apply-detail("music_mode", "musica_dinamica"); } }
+                            PillOption { label: "Avatar"; active: root.editing-style == "lado_a_lado"; clicked => { root.editing-style = "lado_a_lado"; root.apply-style("lado_a_lado"); } }
+                        }
+
+                        // 1. MODELOS DE PRESET (PLATAFORMA)
+                        Text { text: "MODELOS DE PRESET (PLATAFORMA)"; color: #94a3b8; font-size: 10px; font-weight: 700; }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            PillOption { label: "YouTube 16:9"; active: root.platform-preset == "youtube_16x9"; clicked => { root.platform-preset = "youtube_16x9"; root.apply-platform("youtube_16x9"); } }
+                            PillOption { label: "Shorts 9:16"; active: root.platform-preset == "youtube_shorts"; clicked => { root.platform-preset = "youtube_shorts"; root.apply-platform("youtube_shorts"); } }
+                            PillOption { label: "Instagram Reels"; active: root.platform-preset == "instagram_reels"; clicked => { root.platform-preset = "instagram_reels"; root.apply-platform("instagram_reels"); } }
+                            PillOption { label: "Facebook 1:1"; active: root.platform-preset == "facebook_feed"; clicked => { root.platform-preset = "facebook_feed"; root.apply-platform("facebook_feed"); } }
+                            PillOption { label: "TikTok Viral"; active: root.platform-preset == "tiktok_viral"; clicked => { root.platform-preset = "tiktok_viral"; root.apply-platform("tiktok_viral"); } }
+                            PillOption { label: "LinkedIn Pro"; active: root.platform-preset == "linkedin_pro"; clicked => { root.platform-preset = "linkedin_pro"; root.apply-platform("linkedin_pro"); } }
+                            PillOption { label: "Podcast Clip"; active: root.platform-preset == "podcast_clip"; clicked => { root.platform-preset = "podcast_clip"; root.apply-platform("podcast_clip"); } }
+                        }
+
+                        // 2. ESTILO DE EDIÇÃO
+                        Text { text: "ESTILO DE EDIÇÃO"; color: #94a3b8; font-size: 10px; font-weight: 700; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: "Ilustrativa + PiP"; tag1: "YouTube"; tag2: "Aula"; tag3: "16:9";
+                                desc: "Tela cheia de elementos e interfaces em 3D. Tu num cartão vertical à direita.";
+                                active: root.editing-style == "ilustrativa_pip";
+                                clicked => { root.editing-style = "ilustrativa_pip"; root.apply-style("ilustrativa_pip"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: "Lado a lado"; tag1: "YouTube"; tag2: "Lista"; tag3: "16:9";
+                                desc: "Tu de um lado com zoom vivo, do outro os pontos entrando um a um.";
+                                active: root.editing-style == "lado_a_lado";
+                                clicked => { root.editing-style = "lado_a_lado"; root.apply-style("lado_a_lado"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: "Review de software"; tag1: "YouTube"; tag2: "Fundo branco"; tag3: "16:9";
+                                desc: "Fundo branco, interface inclinada em 3D, câmera chegando perto de cada detalhe.";
+                                active: root.editing-style == "review_software";
+                                clicked => { root.editing-style = "review_software"; root.apply-style("review_software"); }
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: "Zoom dinâmico"; tag1: "YouTube"; tag2: "Fala direta"; tag3: "16:9";
+                                desc: "Tu sempre na tela, câmera nunca para, zoom in/out e foco nas frases-chave.";
+                                active: root.editing-style == "zoom_dinamico";
+                                clicked => { root.editing-style = "zoom_dinamico"; root.apply-style("zoom_dinamico"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: "Apresentação animada"; tag1: "YouTube"; tag2: "Curso"; tag3: "16:9";
+                                desc: "Títulos e listas grandes animados como slides vivos + bolha redonda no canto.";
+                                active: root.editing-style == "apresentacao_animada";
+                                clicked => { root.editing-style = "apresentacao_animada"; root.apply-style("apresentacao_animada"); }
+                            }
+                            StyleCard {
+                                horizontal-stretch: 1;
+                                title: "Automático (mix)"; tag1: "Tu decide"; tag2: "9:16 e 16:9"; tag3: "IA";
+                                desc: "IA escolhe cena por cena o que encaixa melhor misturando os estilos acima.";
+                                active: root.editing-style == "automatico_mix";
+                                clicked => { root.editing-style = "automatico_mix"; root.apply-style("automatico_mix"); }
+                            }
+                        }
+
+                        // 3. CORES — PALETAS PRONTAS + SWATCHES INDIVIDUAIS
+                        Text { text: "CORES — PALETAS PRONTAS"; color: #94a3b8; font-size: 10px; font-weight: 700; }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            PillOption { label: "Azul glass"; active: root.color-palette == "azul_glass"; clicked => { root.color-palette = "azul_glass"; root.apply-palette("azul_glass"); } }
+                            PillOption { label: "Neon"; active: root.color-palette == "neon"; clicked => { root.color-palette = "neon"; root.apply-palette("neon"); } }
+                            PillOption { label: "Fogo"; active: root.color-palette == "fogo"; clicked => { root.color-palette = "fogo"; root.apply-palette("fogo"); } }
+                            PillOption { label: "Dinheiro"; active: root.color-palette == "dinheiro"; clicked => { root.color-palette = "dinheiro"; root.apply-palette("dinheiro"); } }
+                            PillOption { label: "Rosa choque"; active: root.color-palette == "rosa_choque"; clicked => { root.color-palette = "rosa_choque"; root.apply-palette("rosa_choque"); } }
+                            PillOption { label: "Mono"; active: root.color-palette == "mono"; clicked => { root.color-palette = "mono"; root.apply-palette("mono"); } }
+                            PillOption { label: "Arco-íris"; active: root.color-palette == "arco_iris"; clicked => { root.color-palette = "arco_iris"; root.apply-palette("arco_iris"); } }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            for group in [
+                                { title: "Destaque", desc: "Títulos e números", key: "highlight" },
+                                { title: "Efeitos", desc: "Brilhos e linhas", key: "effects" },
+                                { title: "Legenda", desc: "Palavra-chave", key: "caption_color" },
+                            ] : Rectangle {
+                                horizontal-stretch: 1; border-radius: 8px; background: #0b1220; border-width: 1px; border-color: #1e293b;
+                                VerticalLayout {
+                                    padding: 8px; spacing: 5px;
+                                    Text { text: group.title + " · " + group.desc; color: #cbd5e1; font-size: 10px; font-weight: 700; }
+                                    HorizontalLayout {
+                                        spacing: 6px;
+                                        for c in [#3b82f6, #22d3ee, #a855f7, #ec4899, #22c55e, #facc15, #f97316, #ffffff] : Rectangle {
+                                            width: 18px; height: 18px; border-radius: 9px; background: c;
+                                            border-width: 1px; border-color: #334155;
+                                            TouchArea {
+                                                mouse-cursor: pointer;
+                                                clicked => {
+                                                    if (group.key == "highlight") { root.highlight-color = c; }
+                                                    if (group.key == "effects") { root.effects-color = c; }
+                                                    if (group.key == "caption_color") { root.caption-color = c; }
+                                                    root.apply-detail(group.key, "swatch");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Preview ao vivo das cores + Safe Zone
+                        Rectangle {
+                            height: 68px;
+                            border-radius: 8px;
+                            background: #020617;
+                            border-width: root.safe-zones ? 2px : 1px;
+                            border-color: root.safe-zones ? #f59e0b : root.effects-color;
+
+                            HorizontalLayout {
+                                padding: 10px;
+                                alignment: space-between;
+                                VerticalLayout {
+                                    spacing: 3px;
+                                    Text {
+                                        text: "PREVIEW AO VIVO · TÍTULO EM DESTAQUE";
+                                        color: root.highlight-color;
+                                        font-size: 12px;
+                                        font-weight: 800;
+                                    }
+                                    Text {
+                                        text: "Legenda com palavra-chave destacada na cena";
+                                        color: root.caption-color;
+                                        font-size: 10px;
+                                        font-weight: 600;
+                                    }
+                                }
+                                if root.safe-zones : Text {
+                                    text: "SAFE ZONE ATIVA";
+                                    color: #f59e0b;
+                                    font-size: 9px;
+                                    font-weight: 800;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // 4. DETALHES DE PRODUÇÃO
+                        Text { text: "DETALHES DE PRODUÇÃO"; color: #94a3b8; font-size: 10px; font-weight: 700; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Rectangle {
+                                horizontal-stretch: 1; border-radius: 8px; background: #0b1220; border-width: 1px; border-color: #1e293b;
+                                VerticalLayout {
+                                    padding: 10px; spacing: 6px;
+                                    Text { text: "Fundo"; color: #f8fafc; font-size: 11px; font-weight: 700; }
+                                    HorizontalLayout {
+                                        spacing: 4px;
+                                        PillOption { label: "Escuro"; active: root.background-mode == "escuro_trocando"; clicked => { root.background-mode = "escuro_trocando"; } }
+                                        PillOption { label: "Branco"; active: root.background-mode == "branco_trocando"; clicked => { root.background-mode = "branco_trocando"; } }
+                                        PillOption { label: "Alternar"; active: root.background-mode == "alternar"; clicked => { root.background-mode = "alternar"; } }
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                horizontal-stretch: 1; border-radius: 8px; background: #0b1220; border-width: 1px; border-color: #1e293b;
+                                VerticalLayout {
+                                    padding: 10px; spacing: 6px;
+                                    Text { text: "Ritmo do movimento"; color: #f8fafc; font-size: 11px; font-weight: 700; }
+                                    HorizontalLayout {
+                                        spacing: 4px;
+                                        PillOption { label: "Suave"; active: root.motion-rhythm == "suave"; clicked => { root.motion-rhythm = "suave"; } }
+                                        PillOption { label: "Médio"; active: root.motion-rhythm == "medio"; clicked => { root.motion-rhythm = "medio"; } }
+                                        PillOption { label: "Agressivo"; active: root.motion-rhythm == "agressivo"; clicked => { root.motion-rhythm = "agressivo"; } }
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                horizontal-stretch: 1; border-radius: 8px; background: #0b1220; border-width: 1px; border-color: #1e293b;
+                                VerticalLayout {
+                                    padding: 10px; spacing: 6px;
+                                    Text { text: "Legenda"; color: #f8fafc; font-size: 11px; font-weight: 700; }
+                                    HorizontalLayout {
+                                        spacing: 4px;
+                                        PillOption { label: "Palavra"; active: root.caption-mode == "palavra_por_palavra"; clicked => { root.caption-mode = "palavra_por_palavra"; } }
+                                        PillOption { label: "Frase"; active: root.caption-mode == "frase_curta"; clicked => { root.caption-mode = "frase_curta"; } }
+                                        PillOption { label: "Sem"; active: root.caption-mode == "sem_legenda"; clicked => { root.caption-mode = "sem_legenda"; } }
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Rectangle {
+                                horizontal-stretch: 1; border-radius: 8px; background: #0b1220; border-width: 1px; border-color: #1e293b;
+                                VerticalLayout {
+                                    padding: 10px; spacing: 6px;
+                                    Text { text: "Cortes & SFX"; color: #f8fafc; font-size: 11px; font-weight: 700; }
+                                    HorizontalLayout {
+                                        spacing: 4px;
+                                        PillOption { label: "Cortar pausas"; active: root.cut-mode == "cortar_pausas_erros"; clicked => { root.cut-mode = "cortar_pausas_erros"; } }
+                                        PillOption { label: "SFX Baixo"; active: root.sfx-level == "baixo"; clicked => { root.sfx-level = "baixo"; } }
+                                        PillOption { label: "SFX Médio"; active: root.sfx-level == "medio"; clicked => { root.sfx-level = "medio"; } }
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                horizontal-stretch: 1; border-radius: 8px; background: #0b1220; border-width: 1px; border-color: #1e293b;
+                                VerticalLayout {
+                                    padding: 10px; spacing: 6px;
+                                    Text { text: "Motor da edição & Gancho (3s)"; color: #f8fafc; font-size: 11px; font-weight: 700; }
+                                    HorizontalLayout {
+                                        spacing: 4px;
+                                        PillOption { label: "Eu decido"; active: root.render-engine == "eu_decido"; clicked => { root.render-engine = "eu_decido"; root.apply-detail("render_engine", "eu_decido"); } }
+                                        PillOption { label: "Nativo FFmpeg"; active: root.render-engine == "nativo_ffmpeg"; clicked => { root.render-engine = "nativo_ffmpeg"; root.apply-detail("render_engine", "nativo_ffmpeg"); } }
+                                        PillOption { label: "Gancho Forte"; active: root.hook-mode == "gancho_forte_titulo"; clicked => { root.hook-mode = "gancho_forte_titulo"; root.apply-detail("hook_mode", "gancho_forte_titulo"); } }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 5. EXTRAS PROFISSIONAIS (ALÉM DAS IMAGENS)
+                        Text { text: "EXTRAS PRO — TRANSIÇÕES, LUT & ÁUDIO"; color: #94a3b8; font-size: 10px; font-weight: 700; }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            PillOption { label: "Whoosh + Blur"; active: root.transition-style == "whoosh_blur"; clicked => { root.transition-style = "whoosh_blur"; } }
+                            PillOption { label: "Zoom Morph"; active: root.transition-style == "zoom_morph"; clicked => { root.transition-style = "zoom_morph"; } }
+                            PillOption { label: "LUT Dark Cinema"; active: root.color-grade == "dark_cinema"; clicked => { root.color-grade = "dark_cinema"; } }
+                            PillOption { label: "LUT Teal & Orange"; active: root.color-grade == "teal_and_orange"; clicked => { root.color-grade = "teal_and_orange"; } }
+                            PillOption { label: "Auto-Ducking -14 LUFS"; active: root.auto-ducking; clicked => { root.auto-ducking = !root.auto-ducking; } }
+                            PillOption { label: "Safe Zones"; active: root.safe-zones; clicked => { root.safe-zones = !root.safe-zones; } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

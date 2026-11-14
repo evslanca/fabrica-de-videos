@@ -62,6 +62,9 @@ pub struct FactoryPipelineConfig {
     pub caption: CaptionNodeConfig,
     /// Export resolution and target folder.
     pub export: ExportNodeConfig,
+    /// Professional editing style, color palette, platform preset, and production details.
+    #[serde(default)]
+    pub pro: crate::presets::FactoryProConfig,
     /// Optional Pexels key (falls back to Pixabay/local vault when None).
     pub pexels_key: Option<String>,
     /// Optional Pixabay key (falls back to local vault when None).

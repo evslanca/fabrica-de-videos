@@ -24,9 +24,12 @@ export component BatchQueuePanel {
     in property <int>  completed-count: 0;
     in property <int>  total-count: 0;
 
+    in-out property <string> new-topic: "";
+
     callback start-batch();
     callback stop-batch();
     callback clear-queue();
+    callback add-topic(string);
 
     width: 260px;
 
@@ -108,6 +111,71 @@ export component BatchQueuePanel {
 
                     TouchArea {
                         clicked => { root.clear-queue(); }
+                    }
+                }
+            }
+
+            // Add topic input row
+            HorizontalLayout {
+                spacing: 6px;
+
+                Rectangle {
+                    height: 28px;
+                    border-radius: 6px;
+                    background: #17171e;
+                    border-width: 1px;
+                    border-color: #2a2a35;
+                    horizontal-stretch: 1;
+
+                    if root.new-topic == "" : Text {
+                        x: 8px;
+                        text: "Novo tema para o lote...";
+                        font-size: 11px;
+                        color: #4b5563;
+                        vertical-alignment: center;
+                    }
+
+                    TextInput {
+                        x: 8px;
+                        width: parent.width - 16px;
+                        height: parent.height;
+                        text <=> root.new-topic;
+                        font-size: 11px;
+                        color: #e8e8f0;
+                        vertical-alignment: center;
+                        accepted => {
+                            if (root.new-topic != "") {
+                                root.add-topic(root.new-topic);
+                                root.new-topic = "";
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 6px;
+                    background: #1d4ed8;
+                    border-width: 1px;
+                    border-color: #3b82f6;
+
+                    Text {
+                        text: "+";
+                        font-size: 14px;
+                        font-weight: 700;
+                        color: #ffffff;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    TouchArea {
+                        clicked => {
+                            if (root.new-topic != "") {
+                                root.add-topic(root.new-topic);
+                                root.new-topic = "";
+                            }
+                        }
                     }
                 }
             }

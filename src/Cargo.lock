@@ -1330,6 +1330,7 @@ name = "concat-mcp"
 version = "0.2.10"
 dependencies = [
  "concat-api",
+ "concat-factory",
  "concat-server",
  "serde_json",
  "tempfile",
@@ -7315,6 +7316,8 @@ dependencies = [
  "once_cell",
  "rustls",
  "rustls-pki-types",
+ "serde",
+ "serde_json",
  "socks",
  "url",
  "webpki-roots 0.26.11",

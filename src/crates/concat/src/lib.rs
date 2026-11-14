@@ -2244,10 +2244,9 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         factory_ui.on_fabricate(on_window!(|state| {
             state.handle(Msg::Factory(panes::factory::FactoryMsg::Fabricate));
         }));
-        factory_ui.on_node_selected(on_window!(|state, id: SharedString, kind: SharedString| {
+        factory_ui.on_node_selected(on_window!(|state, id: SharedString, _kind: SharedString| {
             state.handle(Msg::Factory(panes::factory::FactoryMsg::NodeSelected {
                 id: id.to_string(),
-                kind: kind.to_string(),
             }));
         }));
         factory_ui.on_test_node(on_window!(|state, id: SharedString| {
@@ -2261,6 +2260,14 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         factory_ui.on_stop_batch(on_window!(|state| {
             state.handle(Msg::Factory(panes::factory::FactoryMsg::BatchStop));
         }));
+        factory_ui.on_clear_batch(on_window!(|state| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::BatchClear));
+        }));
+        factory_ui.on_add_batch_topic(on_window!(|state, topic: SharedString| {
+            state.handle(Msg::Factory(panes::factory::FactoryMsg::BatchAdd(
+                topic.to_string(),
+            )));
+        }));
         factory_ui.on_aspect_changed(on_window!(|state, is_16_9: bool| {
             state.handle(Msg::Factory(panes::factory::FactoryMsg::AspectChanged(is_16_9)));
         }));
@@ -2270,6 +2277,16 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
                 is_output,
             }));
         }));
+        factory_ui.on_apply_node_preset(on_window!(
+            |state, id: SharedString, preset: SharedString| {
+                state.handle(Msg::Factory(
+                    panes::factory::FactoryMsg::ApplyNodePreset {
+                        id: id.to_string(),
+                        preset: preset.to_string(),
+                    },
+                ));
+            }
+        ));
     }
 
     // ── settings ──

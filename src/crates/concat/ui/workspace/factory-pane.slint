@@ -6,54 +6,39 @@ import { StatusLed, LedState, LevelMeter } from "../primitives/primitives.slint"
 import { FactoryNodeCard } from "./factory/node-card.slint";
 import { BatchQueuePanel, BatchQueueItem } from "./factory/batch-queue.slint";
 import { NodeInspector } from "./factory/node-inspector.slint";
-import { WireLayer, WireConnection } from "./factory/wire-renderer.slint";
+import { NodeConfigModal } from "./factory/node-modal.slint";
+import { ProStudioModal } from "./factory/pro-studio-modal.slint";
+import { WireLayer, WireConnection, FactoryNodeRow } from "./factory/wire-renderer.slint";
+export { FactoryNodeRow }
 
 // Factory Pane: the visual workflow canvas.
 // Renders a dark dotted-grid infinite canvas with pan/zoom, draggable node cards
 // connected by cubic bezier wires, status LEDs, stereo VU meters, and batch queue.
 
-export struct FactoryNodeRow {
-    id: string,
-    title: string,
-    subtitle: string,
-    status: LedState,
-    progress: float,
-    pos-x: length,
-    pos-y: length,
-}
-
 export global FactoryData {
     // Pipeline nodes to render on the canvas
     in-out property <[FactoryNodeRow]> nodes: [
-        { id: "script",  title: "Roteiro",       subtitle: "Divisão em cenas e hook",           status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 120px },
-        { id: "voice",   title: "Voz / TTS",     subtitle: "Edge-TTS · Chatterbox · Cloning",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 30px  },
-        { id: "media",   title: "B-Roll",        subtitle: "Pexels · Pixabay · Ken Burns",      status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 150px },
-        { id: "music",   title: "Música IA",     subtitle: "Sem Voz (BGM) · Com Voz (Letra)",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 270px },
-        { id: "sfx",     title: "SFX & Áudio",   subtitle: "Whoosh · Riser · Auto-Ducking",     status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 60px  },
-        { id: "caption", title: "Legendas",      subtitle: "Hormozi · Safe Zone · Palavras",    status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 200px },
-        { id: "export",  title: "Exportar",      subtitle: "16:9 YouTube · 9:16 Shorts",        status: LedState.Off, progress: 0.0, pos-x: 840px, pos-y: 130px },
+        { id: "script",  title: "Roteiro",       subtitle: "🤖 Aria · Divisão em cenas e hook",        status: LedState.Off, progress: 0.0, pos-x: 30px,  pos-y: 120px },
+        { id: "voice",   title: "Voz / TTS",     subtitle: "🤖 Kael · Edge-TTS · Chatterbox · Cloning", status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 30px  },
+        { id: "media",   title: "B-Roll",        subtitle: "🤖 Nova · Avatares · Pexels · Ken Burns",   status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 150px },
+        { id: "music",   title: "Música IA",     subtitle: "🤖 Lyra · Jingles · BGM · Com Voz",         status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 270px },
+        { id: "avatar",  title: "Avatar & Dub",  subtitle: "🤖 Nova · Lip-Sync · Dublagem Multi-Idioma", status: LedState.Off, progress: 0.0, pos-x: 300px, pos-y: 390px },
+        { id: "sfx",     title: "SFX & Áudio",   subtitle: "🤖 Lyra · Whoosh · Riser · Auto-Ducking",   status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 60px  },
+        { id: "caption", title: "Legendas",      subtitle: "🤖 Kronos · Hormozi · Safe Zone · Palavras", status: LedState.Off, progress: 0.0, pos-x: 570px, pos-y: 200px },
+        { id: "export",  title: "Exportar",      subtitle: "🤖 Kronos · 16:9 YouTube · 9:16 Shorts",    status: LedState.Off, progress: 0.0, pos-x: 840px, pos-y: 130px },
     ];
 
     // Cubic bezier wire connections between node output and input ports
     in-out property <[WireConnection]> wires: [
-        // script (250, 165) -> voice (300, 75)
-        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 75.0,  active: true  },
-        // script (250, 165) -> media (300, 195)
-        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 195.0, active: true  },
-        // script (250, 165) -> music (300, 315)
-        { start-x: 250.0, start-y: 165.0, end-x: 300.0, end-y: 315.0, active: true  },
-        // voice (520, 75) -> sfx (570, 105)
-        { start-x: 520.0, start-y: 75.0,  end-x: 570.0, end-y: 105.0, active: true  },
-        // music (520, 315) -> sfx (570, 105)
-        { start-x: 520.0, start-y: 315.0, end-x: 570.0, end-y: 105.0, active: true  },
-        // voice (520, 75) -> caption (570, 245)
-        { start-x: 520.0, start-y: 75.0,  end-x: 570.0, end-y: 245.0, active: false },
-        // media (520, 195) -> export (840, 175)
-        { start-x: 520.0, start-y: 195.0, end-x: 840.0, end-y: 175.0, active: true  },
-        // sfx (790, 105) -> export (840, 175)
-        { start-x: 790.0, start-y: 105.0, end-x: 840.0, end-y: 175.0, active: false },
-        // caption (790, 245) -> export (840, 175)
-        { start-x: 790.0, start-y: 245.0, end-x: 840.0, end-y: 175.0, active: false },
+        { from-idx: 0, to-idx: 1, active: true  }, // script  -> voice
+        { from-idx: 0, to-idx: 2, active: true  }, // script  -> media
+        { from-idx: 0, to-idx: 3, active: true  }, // script  -> music
+        { from-idx: 1, to-idx: 4, active: true  }, // voice   -> sfx
+        { from-idx: 3, to-idx: 4, active: true  }, // music   -> sfx
+        { from-idx: 1, to-idx: 5, active: false }, // voice   -> caption
+        { from-idx: 2, to-idx: 6, active: true  }, // media   -> export
+        { from-idx: 4, to-idx: 6, active: false }, // sfx     -> export
+        { from-idx: 5, to-idx: 6, active: false }, // caption -> export
     ];
 
     in-out property <[BatchQueueItem]> batch-items;
@@ -65,22 +50,36 @@ export global FactoryData {
     in-out property <string>   selected-node-title: "";
     in-out property <LedState> selected-node-status: LedState.Off;
     in-out property <bool>     aspect-16-9: true;
+    in-out property <bool>     fabricating: false;
+    in-out property <string>   status-text: "";
     in-out property <float>    vu-left: 0.0;
     in-out property <float>    vu-right: 0.0;
+    in-out property <bool>     factory-mode: false;
 
     callback fabricate();
     callback node-selected(string, string);  // id, kind
     callback aspect-changed(bool);           // true = 16:9, false = 9:16
     callback start-batch();
     callback stop-batch();
+    callback clear-batch();
+    callback add-batch-topic(string);
     callback test-node(string);
     callback port-clicked(string, bool);    // node-id, is-output
+    callback apply-node-preset(string, string); // node-id, preset
 }
 
 export component FactoryPane {
     property <length> pan-x: 0px;
     property <length> pan-y: 0px;
     property <float>  zoom: 1.0;
+    property <int>    modal-node-idx: -1;
+    in-out property <bool> pro-studio-open: false;
+    property <int>    selected-node-idx: -1;
+    property <bool>   show-sidebar: FactoryData.factory-mode;
+    property <bool>   sidebar-visible: root.show-sidebar;
+
+    // Pan gesture + scroll-wheel zoom + click-to-deselect on canvas background
+    // (placed inside main canvas area below)
 
     HorizontalLayout {
         spacing: 0px;
@@ -91,21 +90,46 @@ export component FactoryPane {
             background: #0d0d12;
             clip: true;
 
-            // Pan gesture on canvas background
+            // Pan gesture + scroll zoom + click-to-deselect on canvas background
             TouchArea {
                 property <length> drag-start-x;
                 property <length> drag-start-y;
+                property <length> press-x;
+                property <length> press-y;
+                property <bool> has-panned;
                 pointer-event(event) => {
                     if (event.kind == PointerEventKind.down) {
                         drag-start-x = self.mouse-x - root.pan-x;
                         drag-start-y = self.mouse-y - root.pan-y;
+                        press-x = self.mouse-x;
+                        press-y = self.mouse-y;
+                        has-panned = false;
                     }
                 }
                 moved => {
                     if (self.pressed) {
-                        root.pan-x = self.mouse-x - drag-start-x;
-                        root.pan-y = self.mouse-y - drag-start-y;
+                        if (Math.abs(self.mouse-x - press-x) > 3px || Math.abs(self.mouse-y - press-y) > 3px) {
+                            has-panned = true;
+                        }
+                        if (has-panned) {
+                            root.pan-x = self.mouse-x - drag-start-x;
+                            root.pan-y = self.mouse-y - drag-start-y;
+                        }
                     }
+                }
+                clicked => {
+                    if (!has-panned) {
+                        root.selected-node-idx = -1;
+                        FactoryData.node-selected("", "");
+                    }
+                }
+                scroll-event(event) => {
+                    if (event.delta-y > 0px) {
+                        root.zoom = Math.min(1.6, root.zoom + 0.08);
+                    } else if (event.delta-y < 0px) {
+                        root.zoom = Math.max(0.5, root.zoom - 0.08);
+                    }
+                    accept
                 }
             }
 
@@ -114,6 +138,8 @@ export component FactoryPane {
                 width: 100%;
                 height: 100%;
                 wires: FactoryData.wires;
+                nodes: FactoryData.nodes;
+                selected-node-id: FactoryData.selected-node-id;
                 origin-x: root.pan-x;
                 origin-y: root.pan-y;
                 zoom: root.zoom;
@@ -130,56 +156,138 @@ export component FactoryPane {
                 selected: FactoryData.selected-node-id == node.id;
 
                 run-pressed         => { FactoryData.test-node(node.id); }
-                card-clicked        => { FactoryData.node-selected(node.id, node.id); }
+                card-clicked        => {
+                    root.selected-node-idx = idx;
+                    FactoryData.node-selected(node.id, node.id);
+                }
+                card-double-clicked => {
+                    root.selected-node-idx = idx;
+                    FactoryData.node-selected(node.id, node.id);
+                    root.modal-node-idx = idx;
+                }
                 input-port-clicked  => { FactoryData.port-clicked(node.id, false); }
                 output-port-clicked => { FactoryData.port-clicked(node.id, true); }
                 moved(dx, dy) => {
-                    FactoryData.nodes[idx].pos-x = node.pos-x + dx / root.zoom;
-                    FactoryData.nodes[idx].pos-y = node.pos-y + dy / root.zoom;
+                    FactoryData.nodes[idx].pos-x = FactoryData.nodes[idx].pos-x + dx / root.zoom;
+                    FactoryData.nodes[idx].pos-y = FactoryData.nodes[idx].pos-y + dy / root.zoom;
                 }
             }
 
-            // ── Top-right zoom controls ────────────────────────────────────
-            Rectangle {
-                x: parent.width - self.width - 12px;
+            // ── Top-left subtle flow legend ────────────────────────────────
+            if FactoryData.selected-node-id != "" : Rectangle {
+                x: 12px;
                 y: 12px;
-                width: 112px;
-                height: 30px;
+                width: legend-row.preferred-width + 16px;
+                height: 26px;
                 border-radius: 6px;
-                background: #14141b.with-alpha(0.9);
+                background: #14141b.with-alpha(0.88);
                 border-width: 1px;
                 border-color: #2a2a35;
 
-                HorizontalLayout {
-                    padding: 4px;
-                    spacing: 4px;
+                legend-row := HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    spacing: 10px;
                     alignment: center;
 
-                    Rectangle {
-                        width: 24px; height: 22px; border-radius: 4px; background: #1e1e28;
-                        Text { text: "-"; color: #cbd5e1; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
-                        TouchArea { clicked => { root.zoom = Math.max(0.5, root.zoom - 0.1); } }
-                    }
+                    Text { text: "● Vem de"; color: #f59e0b; font-size: 10px; font-weight: 700; vertical-alignment: center; }
+                    Text { text: "● Vai para"; color: #38bdf8; font-size: 10px; font-weight: 700; vertical-alignment: center; }
+                    Text { text: "2x clique para editar"; color: #94a3b8; font-size: 10px; vertical-alignment: center; }
+                }
+            }
 
-                    Text {
-                        text: Math.round(root.zoom * 100) + "%";
-                        color: #94a3b8;
-                        font-size: 10px;
-                        vertical-alignment: center;
+            // ── Top-right canvas controls (Fullscreen + Sidebar + Zoom) ─────
+            HorizontalLayout {
+                x: parent.width - self.width - 12px;
+                y: 12px;
+                height: 30px;
+                spacing: 6px;
+
+                // Toggle full-workspace Factory mode vs docked editor
+                Rectangle {
+                    width: fs-lbl.width + 16px;
+                    height: 30px;
+                    border-radius: 6px;
+                    background: FactoryData.factory-mode ? #1e3a8a : (fs-ta.has-hover ? #1e1e2a : #14141b.with-alpha(0.9));
+                    border-width: 1px;
+                    border-color: FactoryData.factory-mode ? #3b82f6 : #2a2a35;
+
+                    fs-lbl := Text {
+                        text: FactoryData.factory-mode ? "← Voltar ao Editor" : "⛶ Tela Cheia";
+                        color: FactoryData.factory-mode ? #bfdbfe : #e2e8f0;
+                        font-size: 11px;
+                        font-weight: 600;
                         horizontal-alignment: center;
-                        width: 34px;
+                        vertical-alignment: center;
                     }
-
-                    Rectangle {
-                        width: 24px; height: 22px; border-radius: 4px; background: #1e1e28;
-                        Text { text: "+"; color: #cbd5e1; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
-                        TouchArea { clicked => { root.zoom = Math.min(1.6, root.zoom + 0.1); } }
+                    fs-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { FactoryData.factory-mode = !FactoryData.factory-mode; }
                     }
+                }
 
-                    Rectangle {
-                        width: 18px; height: 22px; border-radius: 4px; background: #1e1e28;
-                        Text { text: "⟲"; color: #94a3b8; font-size: 10px; horizontal-alignment: center; vertical-alignment: center; }
-                        TouchArea { clicked => { root.zoom = 1.0; root.pan-x = 0px; root.pan-y = 0px; } }
+                // Toggle right sidebar (Node Inspector + Batch Queue)
+                Rectangle {
+                    width: sb-lbl.width + 16px;
+                    height: 30px;
+                    border-radius: 6px;
+                    background: root.sidebar-visible ? #1f2937 : (sb-ta.has-hover ? #1e1e2a : #14141b.with-alpha(0.9));
+                    border-width: 1px;
+                    border-color: root.sidebar-visible ? #4b5563 : #2a2a35;
+
+                    sb-lbl := Text {
+                        text: root.sidebar-visible ? "◧ Ocultar Painel" : "◧ Painel";
+                        color: #cbd5e1;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    sb-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.show-sidebar = !root.show-sidebar; }
+                    }
+                }
+
+                // Zoom controls
+                Rectangle {
+                    width: 112px;
+                    height: 30px;
+                    border-radius: 6px;
+                    background: #14141b.with-alpha(0.9);
+                    border-width: 1px;
+                    border-color: #2a2a35;
+
+                    HorizontalLayout {
+                        padding: 4px;
+                        spacing: 4px;
+                        alignment: center;
+
+                        Rectangle {
+                            width: 24px; height: 22px; border-radius: 4px; background: #1e1e28;
+                            Text { text: "-"; color: #cbd5e1; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+                            TouchArea { clicked => { root.zoom = Math.max(0.5, root.zoom - 0.1); } }
+                        }
+
+                        Text {
+                            text: Math.round(root.zoom * 100) + "%";
+                            color: #94a3b8;
+                            font-size: 10px;
+                            vertical-alignment: center;
+                            horizontal-alignment: center;
+                            width: 34px;
+                        }
+
+                        Rectangle {
+                            width: 24px; height: 22px; border-radius: 4px; background: #1e1e28;
+                            Text { text: "+"; color: #cbd5e1; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+                            TouchArea { clicked => { root.zoom = Math.min(1.6, root.zoom + 0.1); } }
+                        }
+
+                        Rectangle {
+                            width: 18px; height: 22px; border-radius: 4px; background: #1e1e28;
+                            Text { text: "⟲"; color: #94a3b8; font-size: 10px; horizontal-alignment: center; vertical-alignment: center; }
+                            TouchArea { clicked => { root.zoom = 1.0; root.pan-x = 0px; root.pan-y = 0px; } }
+                        }
                     }
                 }
             }
@@ -287,18 +395,38 @@ export component FactoryPane {
                                 size: 7px;
                             }
                         }
+
+                        Text {
+                            text: "-14 LUFS";
+                            color: #60a5fa;
+                            font-size: 9px;
+                            font-weight: 700;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    // Live pipeline / wiring status
+                    Text {
+                        text: FactoryData.status-text;
+                        font-size: 11px;
+                        color: #94a3b8;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
                     }
 
                     // FABRICATE master button
                     Rectangle {
                         width: 180px; height: 36px;
                         border-radius: 8px;
-                        background: @linear-gradient(135deg, #7c3aed, #2563eb);
+                        background: FactoryData.fabricating
+                            ? @linear-gradient(135deg, #4c1d95, #1e3a8a)
+                            : @linear-gradient(135deg, #7c3aed, #2563eb);
                         border-width: 1px;
                         border-color: #818cf8;
 
                         Text {
-                            text: "⚡ FABRICAR VÍDEO";
+                            text: FactoryData.fabricating ? "⏳ FABRICANDO..." : "⚡ FABRICAR VÍDEO";
                             font-size: 13px;
                             font-weight: 900;
                             color: #ffffff;
@@ -307,26 +435,156 @@ export component FactoryPane {
                         }
 
                         TouchArea {
+                            enabled: !FactoryData.fabricating;
                             clicked => { FactoryData.fabricate(); }
                         }
                     }
                 }
             }
+
+            if root.modal-node-idx >= 0 && root.modal-node-idx < FactoryData.nodes.length : NodeConfigModal {
+                width: 100%;
+                height: 100%;
+                node-id: FactoryData.nodes[root.modal-node-idx].id;
+                node-title: FactoryData.nodes[root.modal-node-idx].title;
+                node-subtitle: FactoryData.nodes[root.modal-node-idx].subtitle;
+                node-status: FactoryData.nodes[root.modal-node-idx].status;
+                node-progress: FactoryData.nodes[root.modal-node-idx].progress;
+                nodes: FactoryData.nodes;
+                wires: FactoryData.wires;
+
+                close => { root.modal-node-idx = -1; }
+                test-node(id) => { FactoryData.test-node(id); }
+                focus-node(id) => {
+                    root.pan-x = parent.width / 2 - FactoryData.nodes[root.modal-node-idx].pos-x * root.zoom - 110px;
+                    root.pan-y = parent.height / 2 - FactoryData.nodes[root.modal-node-idx].pos-y * root.zoom - 45px;
+                    root.modal-node-idx = -1;
+                }
+                apply-preset(id, subtitle) => {
+                    FactoryData.nodes[root.modal-node-idx].subtitle = subtitle;
+                    FactoryData.apply-node-preset(id, subtitle);
+                }
+                toggle-wire(wire-idx) => {
+                    FactoryData.wires[wire-idx].active = !FactoryData.wires[wire-idx].active;
+                }
+            }
+
+            // ── Bottom-left Quick Assets Bar (Vídeo, Áudio, Efeitos) ────────
+            Rectangle {
+                x: 12px;
+                y: parent.height - 42px;
+                width: assets-row.preferred-width + 16px;
+                height: 30px;
+                border-radius: 8px;
+                background: #0b1220ee;
+                border-width: 1px;
+                border-color: #1e293b;
+
+                assets-row := HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    spacing: 6px;
+                    alignment: center;
+
+                    for item in [
+                        { label: "🎬 + Vídeo B-Roll", node: "media", preset: "B-Roll Local · Ken Burns" },
+                        { label: "🎵 + Áudio / Música", node: "music", preset: "Música IA · Auto-Ducking" },
+                        { label: "✨ + Efeito / LUT", node: "sfx", preset: "color_grade:dark_cinema" },
+                    ] : Rectangle {
+                        height: 22px;
+                        border-radius: 5px;
+                        background: asset-touch.has-hover ? #1d4ed8 : #1e293b;
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            Text {
+                                text: item.label;
+                                color: #e2e8f0;
+                                font-size: 10px;
+                                font-weight: 600;
+                                vertical-alignment: center;
+                            }
+                        }
+                        asset-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                FactoryData.apply-node-preset(item.node, item.preset);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Top-right Pro Studio button ────────────────────────────────
+            Rectangle {
+                x: parent.width - self.width - 12px;
+                y: 12px;
+                width: pro-btn-row.preferred-width + 20px;
+                height: 30px;
+                border-radius: 8px;
+                background: pro-btn-touch.has-hover ? #1d4ed8 : #0f2544;
+                border-width: 1px;
+                border-color: #3b82f6;
+
+                pro-btn-row := HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    alignment: center;
+                    Text {
+                        text: "✨ Estúdio Pro · " + pro-modal.platform-preset + " · " + pro-modal.color-palette;
+                        color: #ffffff;
+                        font-size: 11px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                }
+
+                pro-btn-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.pro-studio-open = true; }
+                }
+            }
+
+            pro-modal := ProStudioModal {
+                open: root.pro-studio-open;
+                close => { root.pro-studio-open = false; }
+                apply-platform(p) => {
+                    FactoryData.apply-node-preset("export", p);
+                }
+                apply-style(s) => {
+                    FactoryData.apply-node-preset("script", s);
+                }
+                apply-palette(c) => {
+                    FactoryData.apply-node-preset("caption", c);
+                }
+                apply-detail(k, v) => {
+                    FactoryData.apply-node-preset("sfx", k + ":" + v);
+                }
+            }
         }
 
-        // ── Right sidebar: Inspector + Batch Queue ─────────────────────────
-        VerticalLayout {
-            width: 272px;
+        // ── Right sidebar: Inspector + Batch Queue (collapsible) ─────────
+        if root.sidebar-visible : Rectangle {
+          width: 272px;
+          background: #0d0d12;
+          VerticalLayout {
             spacing: 8px;
             padding: 8px;
-            background: #0d0d12;
 
             NodeInspector {
                 node-kind: FactoryData.selected-node-kind;
                 node-title: FactoryData.selected-node-title != "" ? FactoryData.selected-node-title : "Nenhum Nó Selecionado";
                 node-status: FactoryData.selected-node-status;
-                apply => {}
-                test-node => { FactoryData.test-node(FactoryData.selected-node-id); }
+                apply => {
+                    if (root.selected-node-idx >= 0 && root.selected-node-idx < FactoryData.nodes.length) {
+                        root.modal-node-idx = root.selected-node-idx;
+                    }
+                }
+                test-node => {
+                    if (FactoryData.selected-node-id != "") {
+                        FactoryData.test-node(FactoryData.selected-node-id);
+                    }
+                }
             }
 
             BatchQueuePanel {
@@ -336,8 +594,10 @@ export component FactoryPane {
                 total-count: FactoryData.batch-total;
                 start-batch => { FactoryData.start-batch(); }
                 stop-batch  => { FactoryData.stop-batch(); }
-                clear-queue => { FactoryData.batch-items = []; }
+                clear-queue => { FactoryData.clear-batch(); }
+                add-topic(t) => { FactoryData.add-batch-topic(t); }
             }
+          }
         }
     }
 }
