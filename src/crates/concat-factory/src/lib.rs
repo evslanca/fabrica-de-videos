@@ -9,9 +9,11 @@
 
 pub mod ai_enhancements;
 pub mod batch;
+pub mod diagnostics;
 pub mod dubbing;
 pub mod exporter;
 pub mod graph;
+pub mod interchange;
 pub mod local_models;
 pub mod nodes;
 pub mod orchestrator;

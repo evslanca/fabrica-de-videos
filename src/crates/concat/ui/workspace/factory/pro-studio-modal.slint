@@ -502,6 +502,18 @@ export component ProStudioModal inherits Rectangle {
                                 clicked => { root.studio-sound = !root.studio-sound; root.apply-detail("studio_sound", root.studio-sound ? "true" : "false"); }
                             }
                         }
+
+                        // 7. SILÊNCIOS (0-100%) & EXPORTAR PARA (XML / DUPLO / PACOTE IA)
+                        Text { text: "SILÊNCIOS (0-100%) & EXPORTAR BLOCO PARA..."; color: #60a5fa; font-size: 10px; font-weight: 800; }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            PillOption { label: "🔍 Analisar Silêncios (Todo Áudio 0-100%)"; active: false; clicked => { root.apply-detail("silence_scan", "full"); } }
+                            PillOption { label: "✂️ Analisar Trecho Selecionado"; active: false; clicked => { root.apply-detail("silence_scan", "selection"); } }
+                            PillOption { label: "📦 Exportar XML (Premiere / DaVinci)"; active: false; clicked => { root.apply-detail("export_to", "fcpxml"); } }
+                            PillOption { label: "📱+🖥️ Exportar Duplo (16:9 + 9:16)"; active: false; clicked => { root.apply-detail("export_to", "dual_aspect"); } }
+                            PillOption { label: "🧠 Pacote IA (Economizar Tokens)"; active: false; clicked => { root.apply-detail("export_to", "ai_package"); } }
+                            PillOption { label: "📸 Capa YouTube Auto (Print Cena)"; active: false; clicked => { root.apply-detail("thumbnail_auto", "best_scene"); } }
+                        }
                     }
                 }
             }

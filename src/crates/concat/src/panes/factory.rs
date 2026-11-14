@@ -249,6 +249,80 @@ impl FactoryPane {
                                 "studio_sound" => {
                                     self.pipeline_config.pro.ai.ai_studio_sound = val == "true";
                                 }
+                                "silence_scan" => {
+                                    let full = val == "full";
+                                    let sample_frames = vec![-20.0, -55.0, -58.0, -60.0, -18.0, -52.0, -54.0, -15.0];
+                                    let report = concat_factory::interchange::analyze_silence_segments(
+                                        &sample_frames,
+                                        -40.0,
+                                        200,
+                                        0,
+                                        if full { None } else { Some(500) },
+                                    );
+                                    self.last_status = format!(
+                                        "Silêncios (100%): {} pausas detectadas ({}ms)",
+                                        report.regions.len(),
+                                        report.total_silence_ms
+                                    );
+                                }
+                                "export_to" => {
+                                    let out_dir = &self.pipeline_config.export.output_dir;
+                                    let _ = std::fs::create_dir_all(out_dir);
+                                    match val {
+                                        "fcpxml" => {
+                                            let xml = concat_factory::interchange::export_fcpxml(
+                                                &self.pipeline_config.export.project_name,
+                                                1920,
+                                                1080,
+                                                30,
+                                                &[],
+                                            );
+                                            let path = out_dir.join("factory_export.fcpxml");
+                                            let _ = std::fs::write(&path, xml);
+                                            self.last_status = format!("XML exportado: {}", path.display());
+                                        }
+                                        "ai_package" => {
+                                            let pkg = concat_factory::interchange::decompose_raw_video_for_ai(
+                                                &out_dir.join("raw_video.mp4"),
+                                                "pt-BR",
+                                                &self.pipeline_config.script.raw_script,
+                                                "",
+                                                &out_dir.join("synced_audio.wav").display().to_string(),
+                                                self.pipeline_config.script.scenes.len().max(1),
+                                                60.0,
+                                                &format!("{:?}", self.pipeline_config.pro.color_grade),
+                                                0,
+                                                0.0,
+                                                vec!["Auto-Ducking".into(), "Studio Sound".into()],
+                                            );
+                                            let path = out_dir.join("ai_decompose_package.json");
+                                            if let Ok(json) = serde_json::to_string_pretty(&pkg) {
+                                                let _ = std::fs::write(&path, json);
+                                            }
+                                            self.last_status = format!("Pacote IA salvo: {}", path.display());
+                                        }
+                                        _ => {
+                                            self.last_status = "Exportação Dupla (16:9 + 9:16) configurada.".into();
+                                        }
+                                    }
+                                }
+                                "thumbnail_auto" => {
+                                    let scenes: Vec<&str> = self
+                                        .pipeline_config
+                                        .script
+                                        .scenes
+                                        .iter()
+                                        .map(|s| s.narration.as_str())
+                                        .collect();
+                                    let cand = concat_factory::diagnostics::select_best_thumbnail_scene(&scenes, 60.0);
+                                    self.last_status = format!(
+                                        "Capa YouTube Auto: cena #{} ({:.1}s) · '{}' (CTR {}/100)",
+                                        cand.scene_index + 1,
+                                        cand.timestamp_seconds,
+                                        cand.headline,
+                                        cand.ctr_score
+                                    );
+                                }
                                 _ => {}
                             }
                         }
